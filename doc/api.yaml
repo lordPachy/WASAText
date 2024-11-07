@@ -1,0 +1,59 @@
+openapi: 3.0.0
+info:
+  description: WASAText app backend REST API
+  title: WASAText API
+  version: 1.0.0
+paths:
+components:
+  schemas:
+    User:
+      title: User
+      description: "This object represents a single user"
+      type: object
+      properties:
+        username:
+          type: string
+          example: Maria
+          pattern: 'ˆ.*?$'
+          minLength: 3
+          maxLength: 16
+        propic:
+          type: string
+        conversations:
+          type: array
+          items:
+            oneOf: 
+              - $ref: '#/components/schemas/Chat'
+              - $ref: '#/components/schemas/Group'
+    Chat:
+      title: Chat
+      description: "This object represents a single private chat"
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          minItems: 2
+          maxItems: 2
+          uniqueItems: true
+    Group:
+      title: Group
+      description: "This object represents a single group"
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          minItems: 2
+          uniqueItems: true
+        groupname:
+          type: string
+        grouphoto:
+          type: string
+    Message:
+    Reaction:
+
+
+
