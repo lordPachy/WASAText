@@ -33,47 +33,194 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  identifier:
-                    # change here if you decide to use an integer
-                    # or any other type of identifier
-                    type: string
-                    example: "abcdef012345"
-  /users/{id}:
-    parameters:
-      - $ref: '#/components/parameters/userID'
+                $ref: '#/components/securitySchemes/userID'
+
+  /users/setusername:
     put:
       summary: Sets username
-      description: |-
-        It sets the username for the specified userID.
+      description: It sets the username.
       operationId: setMyUserName
+      responses:
+        '201':
+          description: username updated successfully
+          content:
+            application/json: 
+              schema:
+                $ref: '#/components/schemas/username'
+      security:
+      - userID: []
+  /users/setmyphoto:
+    parameters:
+      - $ref: '#/components/parameters/username'
+    put:
+      summary: Sets propic
+      description: It sets the profile photo.
+      operationId: setMyPhoto
       requestBody:
+        description: photo to be uploaded
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: string
+              format: byte
         required: true
       responses:
         '200':
-          description: userID updated successfully
-
+          description: photo updated successfully
+      security:
+      - userID: []
+  /users/conversations:
+    get:
+      summary: Gets all conversations
+      description: |-
+        It gets all the conversations (both private chats and groups) for the specified user.
+      operationId: getMyConversations
+      responses:
+        '200':
+          description: Conversations obtained successfully
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversations'
+      security:
+      - userID: []
+  /users/conversations/{conversationid}:
+    parameters:
+      - $ref: '#/components/parameters/conversationid'
+    get:
+      summary: Gets a conversation
+      description: |-
+        It retrieves a specific conversation (be it a private chat or a group for a specific User).
+      operationId: getConversation
+      responses:
+        '201':
+          description: Conversation obtained successfully
+          content: 
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Chat'
+                  - $ref: '#/components/schemas/Group'
+        '404':
+          description: conversation not found
+      security:
+      - userID: []
+    post:
+      summary: Send a message
+      description: |-
+        It sends a message to a specific conversation (be it a private chat or a group for a specific User).
+      operationId: sendMessage
+      requestBody:
+        description: messasge to be sent
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/TextMessage'
+                - $ref: '#/components/schemas/PhotoMessage'
+      responses:
+        '202':
+          description: Message sent successfully
+        '404':
+          description: conversation not found
+      security:
+      - userID: []
+  /users/conversations/{conversationid}/{messageid}:
+    parameters:
+      - $ref: '#/components/parameters/conversationid'
+      - $ref: '#/components/parameters/messageid'
+    put:
+      summary: Comment a message
+      description: |-
+        It puts a single reaction to a message.
+      operationId: commentMessage
+      requestBody:
+        description: reaction to be put
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reaction'
+      responses:
+        '202':
+          description: Reaction added successfully
+        '404':
+          description: conversation and/or message not found
+      security:
+      - userID: []
+    delete:
+      summary: Delete a message
+      description: |-
+        It deletes a sent message.
+      operationId: deleteMessage
+      responses:
+        '204':
+          description: Message deleted
+        '403':
+          description: Message was not sent by you
+        '404':
+          description: Conversation and/or message not found
+      security:
+      - userID: []
+  /users/conversations/{conversationid}/{messageid}/{reactionid}:
+    parameters:
+      - $ref: '#/components/parameters/conversationid'
+      - $ref: '#/components/parameters/messageid'
+      - $ref: '#/components/parameters/reactionid'
+    delete:
+      summary: Delete a comment
+      description: |-
+        It deletes a comment to a given message.
+      operationId: uncommentMessage
+      responses:
+        '204':
+          description: Comment deleted
+        '403':
+          description: Comment was not sent by you
+        '404':
+          description: Conversation and/or message and/or reaction not found
+      security:
+      - userID: []
 components:
   schemas:
+    username:
+      title: username
+      description: This object represents a username
+      type: string
+      example: Maria
+      pattern: 'ˆ.*?$'
+      minLength: 3
+      maxLength: 16
+    conversationid:
+      title: conversationid
+      description: This object represents a conversation id
+      type: integer
+      example: 1
+    messageid:
+      title: message id
+      description: This object represents a message id
+      type: integer
+      example: 1
+    reactionid:
+      title: reaction id
+      description: This object represents a reaction id
+      type: integer
+      example: 1
     User:
       title: User
       description: "This object represents a single user"
       type: object
       properties:
         username:
-          type: string
-          example: Maria
-          pattern: 'ˆ.*?$'
-          minLength: 3
-          maxLength: 16
+          $ref: '#/components/schemas/username'
         propic:
           type: string
-        conversations:
+          format: binary
+    Conversations:
+      title: Conversations
+      description: This object represents the whole list of a single user's Conversations
+      type: object
+      properties:
+        members:
           type: array
           items:
             oneOf:
@@ -84,21 +231,23 @@ components:
       description: "This object represents the preview of a single chat"
       type: object
       properties:
-        recipient:
+        chatid:
+          $ref: '#/components/schemas/conversationid'
+        user:
           $ref: '#/components/schemas/User'
-        
+        lastmessage:
+          oneOf:
+            - $ref: '#/components/schemas/TextMessage'
+            - $ref: '#/components/schemas/PhotoMessage'
     Chat:
       title: Chat
       description: "This object represents a single private chat"
       type: object
       properties:
-        members:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          minItems: 2
-          maxItems: 2
-          uniqueItems: true
+        conversationid:
+          $ref: '#/components/parameters/conversationid'
+        user:
+          $ref: '#/components/schemas/User'
         messages:
           type: array
           items:
@@ -111,13 +260,21 @@ components:
       description: "This object represents the preview of a single groupchat"
       type: object
       properties:
-        group:
-          $ref: '#/components/schemas/Group'
+        chatid:
+          $ref: '#/components/schemas/conversationid'
+        user:
+          $ref: '#/components/schemas/User'
+        lastmessage:
+          oneOf:
+            - $ref: '#/components/schemas/TextMessage'
+            - $ref: '#/components/schemas/PhotoMessage'
     Group:
       title: Group
       description: "This object represents a single group"
       type: object
       properties:
+        conversationid:
+          $ref: '#/components/parameters/conversationid'
         members:
           type: array
           items:
@@ -135,19 +292,22 @@ components:
           type: string
         grouphoto:
           type: string
+          format: byte
     TextMessage:
       title: TextMessage
       description: "This object represents a single text message"
       type: object
       properties:
+        messageid:
+          $ref: '#/components/schemas/messageid'
         timestamp:
           type: string
           format: date-time
         content:
           type: string
           minLength: 1
-        sender:
-          $ref: '#/components/schemas/User'
+        username:
+          $ref: '#/components/schemas/username'
         checkmarks:
           type: number
           minimum: 0
@@ -157,18 +317,27 @@ components:
           items:
             $ref: '#/components/schemas/Reaction'
           uniqueItems: true
+        sentbyme:
+          type: boolean
+        replyingto:
+          oneOf:
+              - $ref: '#/components/schemas/TextMessage'
+              - $ref: '#/components/schemas/PhotoMessage'
     PhotoMessage:
       title: PhotoMessage
       description: "This object represents a single photo message"
       type: object
       properties:
+        messageid:
+          $ref: '#/components/schemas/messageid'
         timestamp:
           type: string
           format: date-time
         content:
           type: string
-        sender:
-          $ref: '#/components/schemas/User'
+          format: byte
+        username:
+          $ref: '#/components/schemas/username'
         checkmarks:
           type: number
           minimum: 0
@@ -178,36 +347,57 @@ components:
           items:
             $ref: '#/components/schemas/Reaction'
           uniqueItems: true
+        replyingto:
+          oneOf:
+              - $ref: '#/components/schemas/TextMessage'
+              - $ref: '#/components/schemas/PhotoMessage'
+        sentbyme:
+          type: boolean
     Reaction:
       title: Reaction
       description: "This object represents a single reaction to a message"
       type: object
       properties:
+        reactionid:
+          $ref: '#/components/schemas/reactionid'
         sender:
-          $ref: '#/components/schemas/User'
+          $ref: '#/components/schemas/username'
         emoticon:
           type: string
           enum: ["laugh", "sad", "thumbs_up", "surprised", "love", "pray"]
+        sentbyme:
+          type: boolean
   parameters:
-    userID:
-      schema:
-        type: string
-        example: abcd
-        readOnly: true
-      name: id
-      in: path
-      required: true
-      description: User ID
     username:
       schema:
-        type: string
-        example: Maria
-        pattern: 'ˆ.*?$'
-        minLength: 3
-        maxLength: 16
+        $ref: '#/components/schemas/username'  
       name: username
-      in: query
+      in: path
       description: Username
-
-
-
+      required: true
+    conversationid:
+      schema:
+        $ref: '#/components/schemas/conversationid'
+      name: conversationid
+      in: path
+      description: ID of every conversation, associated both with the preview and the actual conversation
+      required: true
+    messageid:
+      schema:
+        $ref: '#/components/schemas/messageid'
+      name: messageid
+      in: path
+      description: id of a single message
+      required: true
+    reactionid:
+      schema:
+        $ref: '#/components/schemas/reactionid'
+      name: reactionid
+      in: path
+      description: id of a single reaction
+      required: true
+  securitySchemes:
+    userID: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # optional, arbitrary value for documentation purposes
