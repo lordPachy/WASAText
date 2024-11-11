@@ -35,41 +35,40 @@ paths:
               schema:
                 $ref: '#/components/securitySchemes/userID'
 
-  /users/setusername:
+  /session/settings/username:
     put:
       summary: Sets username
-      description: It sets the username.
       operationId: setMyUserName
+      requestBody:
+        description: username
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/username'
+        required: true
       responses:
         '201':
-          description: username updated successfully
-          content:
-            application/json: 
-              schema:
-                $ref: '#/components/schemas/username'
+          description: Username updated successfully
       security:
       - userID: []
-  /users/setmyphoto:
-    parameters:
-      - $ref: '#/components/parameters/username'
+  /session/settings/profilepicture:
     put:
-      summary: Sets propic
-      description: It sets the profile photo.
+      summary: Sets profile picture
       operationId: setMyPhoto
       requestBody:
         description: photo to be uploaded
         content:
-          application/json:
+          image/png:
             schema:
               type: string
-              format: byte
+              format: binary
         required: true
       responses:
-        '200':
-          description: photo updated successfully
+        '202':
+          description: Photo updated successfully
       security:
       - userID: []
-  /users/conversations:
+  /session/conversations:
     get:
       summary: Gets all conversations
       description: |-
@@ -84,7 +83,7 @@ paths:
                 $ref: '#/components/schemas/Conversations'
       security:
       - userID: []
-  /users/conversations/{conversationid}:
+  /session/conversations/{conversationid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     get:
@@ -93,7 +92,7 @@ paths:
         It retrieves a specific conversation (be it a private chat or a group for a specific User).
       operationId: getConversation
       responses:
-        '201':
+        '200':
           description: Conversation obtained successfully
           content: 
             application/json:
@@ -102,7 +101,7 @@ paths:
                   - $ref: '#/components/schemas/Chat'
                   - $ref: '#/components/schemas/Group'
         '404':
-          description: conversation not found
+          description: Conversation not found
       security:
       - userID: []
     post:
@@ -125,7 +124,61 @@ paths:
           description: conversation not found
       security:
       - userID: []
-  /users/conversations/{conversationid}/{messageid}:
+    delete:
+      summary: Leave a group
+      description: If the current conversation is a group, you leave the group. Otherwise, it throws an error.
+      operationId: leaveGroup
+      responses:
+        '204':
+          description: Group left successfully
+        '403': 
+          description: The current conversation is not a group.
+        '404': 
+          description: Conversation not found.
+  /session/conversations/{conversationid}/settings/groupname:
+    parameters:
+      - $ref: '#/components/parameters/conversationid'
+    put:
+      summary: Sets group name
+      description: It sets the name of a group.
+      operationId: setGroupName
+      requestBody:
+        description: groupname
+        content:
+          application/json:
+            schema:
+              type: string
+              minLength: 1
+      responses:
+        '202':
+          description: Name updated successfully
+        '404':
+          description: Conversation not found
+      security:
+      - userID: []
+  /session/conversations/{conversationid}/settings/grouphoto:
+    parameters:
+      - $ref: '#/components/parameters/conversationid'
+    put:
+      summary: It sets the photo of a group
+      description: |-
+        It sets the name of a group.
+      operationId: setGroupPhoto
+      requestBody:
+        description: group photo
+        content:
+          application/json:
+            schema:
+              type: string
+              format: byte
+      responses:
+        '202':
+          description: Photo updated successfully
+        '404':
+          description: conversation not found
+      security:
+      - userID: []
+  /session/conversations/{conversationid}/{messageid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
@@ -147,6 +200,24 @@ paths:
           description: conversation and/or message not found
       security:
       - userID: []
+    post:
+        summary: Forward a message
+        description: |-
+          It forwards a message to another chat.
+        operationId: forwardMessage
+        requestBody:
+          description: conversation where message is forwarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/conversationid'
+        responses:
+          '202':
+            description: Message forwarded successfully
+          '404':
+            description: conversation and/or message not found
+        security:
+        - userID: []
     delete:
       summary: Delete a message
       description: |-
@@ -161,7 +232,7 @@ paths:
           description: Conversation and/or message not found
       security:
       - userID: []
-  /users/conversations/{conversationid}/{messageid}/{reactionid}:
+  /session/conversations/{conversationid}/{messageid}/{reactionid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
@@ -180,6 +251,37 @@ paths:
           description: Conversation and/or message and/or reaction not found
       security:
       - userID: []
+
+  /session/conversations/new:
+    put:
+      summary: Add to group
+      description: |-
+        It adds a person to a group via a username. If the group does not exist, it creates it. If the adder is not in the group, an error is thrown.
+      operationId: addToGroup
+      requestBody:
+        description: user and group
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                    $ref: '#/components/schemas/username'
+                group:
+                    $ref: '#/components/schemas/conversationid'
+        required: true
+      responses:
+        '201':
+          description: A new group with that user has been created
+        '202':
+          description: User added successfully
+        '403':
+          description: Users can only be added in groups you take part in
+        '404':
+          description: Conversation and/or user not found
+      security:
+      - userID: []
+
 components:
   schemas:
     username:
