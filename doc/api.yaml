@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: WASAText app backend REST API
+  description: WASAText app backend REST API.
   title: WASAText API
   version: 1.0.0
 paths:
@@ -37,6 +37,7 @@ paths:
 
   /session/settings/username:
     put:
+      tags: ["user settings"]
       summary: Sets username
       operationId: setMyUserName
       requestBody:
@@ -47,12 +48,15 @@ paths:
               $ref: '#/components/schemas/username'
         required: true
       responses:
-        '201':
+        '204':
           description: Username updated successfully
+        '403':
+          description: Username already in use
       security:
       - userID: []
   /session/settings/profilepicture:
     put:
+      tags: ["user settings"]
       summary: Sets profile picture
       operationId: setMyPhoto
       requestBody:
@@ -64,12 +68,13 @@ paths:
               format: binary
         required: true
       responses:
-        '202':
+        '204':
           description: Photo updated successfully
       security:
       - userID: []
   /session/conversations:
     get:
+      tags: ["conversations"]
       summary: Gets all conversations
       description: |-
         It gets all the conversations (both private chats and groups) for the specified user.
@@ -87,9 +92,10 @@ paths:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     get:
+      tags: ["conversations"]
       summary: Gets a conversation
       description: |-
-        It retrieves a specific conversation (be it a private chat or a group for a specific User).
+        It retrieves a specific conversation (be it a private chat or a group for a specific user).
       operationId: getConversation
       responses:
         '200':
@@ -105,40 +111,45 @@ paths:
       security:
       - userID: []
     post:
+      tags: ["messaging"]
       summary: Send a message
       description: |-
-        It sends a message to a specific conversation (be it a private chat or a group for a specific User).
+        It sends a message to a specific conversation (be it in a private chat or a group for a specific user).
       operationId: sendMessage
       requestBody:
-        description: messasge to be sent
+        description: message to be sent
         content:
           application/json:
             schema:
               oneOf:
                 - $ref: '#/components/schemas/TextMessage'
                 - $ref: '#/components/schemas/PhotoMessage'
+        required: true
       responses:
-        '202':
-          description: Message sent successfully
+        '201':
+          description: Message sent
         '404':
-          description: conversation not found
+          description: Conversation not found
       security:
       - userID: []
     delete:
+      tags: ["groups"]
       summary: Leave a group
-      description: If the current conversation is a group, you leave the group. Otherwise, it throws an error.
+      description: |-
+       If the current conversation is a group, it leaves the group. Otherwise, it throws an error.
       operationId: leaveGroup
       responses:
         '204':
           description: Group left successfully
         '403': 
-          description: The current conversation is not a group.
+          description: The current conversation is not a group
         '404': 
-          description: Conversation not found.
+          description: Conversation not found
   /session/conversations/{conversationid}/settings/groupname:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     put:
+      tags: ["groups"]
       summary: Sets group name
       description: It sets the name of a group.
       operationId: setGroupName
@@ -149,8 +160,9 @@ paths:
             schema:
               type: string
               minLength: 1
+        required: true
       responses:
-        '202':
+        '204':
           description: Name updated successfully
         '404':
           description: Conversation not found
@@ -160,22 +172,24 @@ paths:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     put:
-      summary: It sets the photo of a group
+      tags: ["groups"]
+      summary: Updates group photo
       description: |-
-        It sets the name of a group.
+        It sets the photo of a group.
       operationId: setGroupPhoto
       requestBody:
         description: group photo
         content:
-          application/json:
+          image/png:
             schema:
               type: string
               format: byte
+        required: true
       responses:
-        '202':
+        '204':
           description: Photo updated successfully
         '404':
-          description: conversation not found
+          description: Conversation not found
       security:
       - userID: []
   /session/conversations/{conversationid}/{messageid}:
@@ -183,27 +197,30 @@ paths:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
     put:
+      tags: ["messaging"]
       summary: Comment a message
       description: |-
-        It puts a single reaction to a message.
+        It puts a single comment to a message.
       operationId: commentMessage
       requestBody:
-        description: reaction to be put
+        description: comment to be put
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Reaction'
+              $ref: '#/components/schemas/Comment'
+        required: true
       responses:
-        '202':
-          description: Reaction added successfully
+        '201':
+          description: Comment added
         '404':
-          description: conversation and/or message not found
+          description: Conversation and/or message not found
       security:
       - userID: []
     post:
+        tags: ["messaging"]
         summary: Forward a message
         description: |-
-          It forwards a message to another chat.
+          It forwards a message to another chat (be it a private chat or a group).
         operationId: forwardMessage
         requestBody:
           description: conversation where message is forwarded
@@ -211,14 +228,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/conversationid'
+          required: true
         responses:
           '202':
-            description: Message forwarded successfully
+            description: Message forwarded
           '404':
-            description: conversation and/or message not found
+            description: Conversation and/or message not found
         security:
         - userID: []
     delete:
+      tags: ["messaging"]
       summary: Delete a message
       description: |-
         It deletes a sent message.
@@ -227,17 +246,18 @@ paths:
         '204':
           description: Message deleted
         '403':
-          description: Message was not sent by you
+          description: Message was not sent by the user
         '404':
           description: Conversation and/or message not found
       security:
       - userID: []
-  /session/conversations/{conversationid}/{messageid}/{reactionid}:
+  /session/conversations/{conversationid}/{messageid}/{commentid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
-      - $ref: '#/components/parameters/reactionid'
+      - $ref: '#/components/parameters/commentid'
     delete:
+      tags: ["messaging"]
       summary: Delete a comment
       description: |-
         It deletes a comment to a given message.
@@ -246,14 +266,15 @@ paths:
         '204':
           description: Comment deleted
         '403':
-          description: Comment was not sent by you
+          description: Comment was not sent by the user
         '404':
-          description: Conversation and/or message and/or reaction not found
+          description: Conversation and/or message and/or comment not found
       security:
       - userID: []
 
   /session/conversations/new:
     put:
+      tags: ["groups"]
       summary: Add to group
       description: |-
         It adds a person to a group via a username. If the group does not exist, it creates it. If the adder is not in the group, an error is thrown.
@@ -276,7 +297,7 @@ paths:
         '202':
           description: User added successfully
         '403':
-          description: Users can only be added in groups you take part in
+          description: Users can only be added in groups the adder takes part in
         '404':
           description: Conversation and/or user not found
       security:
@@ -302,14 +323,14 @@ components:
       description: This object represents a message id
       type: integer
       example: 1
-    reactionid:
-      title: reaction id
-      description: This object represents a reaction id
+    commentid:
+      title: comment id
+      description: This object represents a comment id
       type: integer
       example: 1
     User:
       title: User
-      description: "This object represents a single user"
+      description: This object represents a single user
       type: object
       properties:
         username:
@@ -409,15 +430,15 @@ components:
           type: string
           minLength: 1
         username:
-          $ref: '#/components/schemas/username'
+          $ref: '#/components/schemas/username'     # sender's username
         checkmarks:
           type: number
           minimum: 0
           maximum: 2
-        reactions:
+        comments:
           type: array
           items:
-            $ref: '#/components/schemas/Reaction'
+            $ref: '#/components/schemas/Comment'
           uniqueItems: true
         sentbyme:
           type: boolean
@@ -439,15 +460,15 @@ components:
           type: string
           format: byte
         username:
-          $ref: '#/components/schemas/username'
+          $ref: '#/components/schemas/username'     # sender's username
         checkmarks:
           type: number
           minimum: 0
           maximum: 2
-        reactions:
+        comments:
           type: array
           items:
-            $ref: '#/components/schemas/Reaction'
+            $ref: '#/components/schemas/Comment'
           uniqueItems: true
         replyingto:
           oneOf:
@@ -455,16 +476,16 @@ components:
               - $ref: '#/components/schemas/PhotoMessage'
         sentbyme:
           type: boolean
-    Reaction:
-      title: Reaction
-      description: "This object represents a single reaction to a message"
+    Comment:
+      title: Comment
+      description: "This object represents a single comment to a message"
       type: object
       properties:
-        reactionid:
-          $ref: '#/components/schemas/reactionid'
+        commentid:
+          $ref: '#/components/schemas/commentid'
         sender:
           $ref: '#/components/schemas/username'
-        emoticon:
+        reaction:
           type: string
           enum: ["laugh", "sad", "thumbs_up", "surprised", "love", "pray"]
         sentbyme:
@@ -491,15 +512,15 @@ components:
       in: path
       description: id of a single message
       required: true
-    reactionid:
+    commentid:
       schema:
-        $ref: '#/components/schemas/reactionid'
-      name: reactionid
+        $ref: '#/components/schemas/commentid'
+      name: commentid
       in: path
-      description: id of a single reaction
+      description: id of a single comment
       required: true
   securitySchemes:
     userID: # arbitrary name for the security scheme
       type: http
       scheme: bearer
-      bearerFormat: JWT # optional, arbitrary value for documentation purposes
+      bearerFormat: JWT 
