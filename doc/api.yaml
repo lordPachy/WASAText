@@ -28,6 +28,8 @@ paths:
                   maxLength: 16
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '201':
           description: User log-in action successful
           content:
@@ -48,6 +50,8 @@ paths:
               $ref: '#/components/schemas/username'
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Username updated successfully
         '403':
@@ -68,6 +72,8 @@ paths:
               format: binary
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Photo updated successfully
       security:
@@ -80,6 +86,8 @@ paths:
         It gets all the conversations (both private chats and groups) for the specified user.
       operationId: getMyConversations
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '200':
           description: Conversations obtained successfully
           content: 
@@ -98,6 +106,8 @@ paths:
         It retrieves a specific conversation (be it a private chat or a group for a specific user).
       operationId: getConversation
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '200':
           description: Conversation obtained successfully
           content: 
@@ -126,6 +136,8 @@ paths:
                 - $ref: '#/components/schemas/PhotoMessage'
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '201':
           description: Message sent
         '404':
@@ -139,6 +151,8 @@ paths:
        If the current conversation is a group, it leaves the group. Otherwise, it throws an error.
       operationId: leaveGroup
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Group left successfully
         '403': 
@@ -162,6 +176,8 @@ paths:
               minLength: 1
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Name updated successfully
         '404':
@@ -186,6 +202,8 @@ paths:
               format: byte
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Photo updated successfully
         '404':
@@ -210,6 +228,8 @@ paths:
               $ref: '#/components/schemas/Comment'
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '201':
           description: Comment added
         '404':
@@ -230,6 +250,8 @@ paths:
                 $ref: '#/components/schemas/conversationid'
           required: true
         responses:
+          '401':
+            $ref: '#/components/responses/UnauthorizedError'
           '202':
             description: Message forwarded
           '404':
@@ -243,6 +265,8 @@ paths:
         It deletes a sent message.
       operationId: deleteMessage
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Message deleted
         '403':
@@ -263,6 +287,8 @@ paths:
         It deletes a comment to a given message.
       operationId: uncommentMessage
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Comment deleted
         '403':
@@ -292,6 +318,8 @@ paths:
                     $ref: '#/components/schemas/conversationid'
         required: true
       responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '201':
           description: A new group with that user has been created
         '202':
@@ -523,4 +551,7 @@ components:
     userID: # arbitrary name for the security scheme
       type: http
       scheme: bearer
-      bearerFormat: JWT 
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
