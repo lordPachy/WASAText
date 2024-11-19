@@ -3,6 +3,29 @@ info:
   description: WASAText app backend REST API.
   title: WASAText API
   version: 1.0.0
+  contact:
+    name: Francesco Calzona
+    email: calzona.2046920@studenti.uniroma1.it
+    url: www.placeholder.com
+  license:
+    name: ECL-2.0
+    url: https://opensource.org/licenses/ECL-2.0
+
+servers:
+    - url: http://wasatext.com/v1
+
+tags:
+    - name: conversations
+      description: Actions concerning groups or private chats
+    - name: groups
+      description: Actions concerning a given specific group
+    - name: login
+      description: Actions concerning login
+    - name: messaging
+      description: Actions concerning a specific message
+    - name: user settings
+      description: Actions concerning user settings
+
 paths:
   /session:
     post:
@@ -19,13 +42,18 @@ paths:
           application/json:
             schema:
               type: object
+              description: Username
               properties:
                 name:
                   type: string
                   example: Maria
-                  pattern: 'ˆ.*?$'
+                  pattern: '^*'
                   minLength: 3
                   maxLength: 16
+              example:
+                UserExample:
+                  properties:
+                    name: Maria
         required: true
       responses:
         '401':
@@ -36,15 +64,27 @@ paths:
             application/json:
               schema:
                 type: object
+                description: access token
                 properties:
                   identifier:
                     type: string
+                    pattern: '^*'
+                    minLength: 4
+                    maxLength: 16
                     example: "abcdef012345"
+                example:
+                  UserToken:
+                    properties:
+                      identifier: alsdfkgnj34902857
 
   /session/settings/username:
     put:
       tags: ["user settings"]
       summary: Sets username
+      description: |-
+        It sets the username of the logged in user.
+        This username will be showed to other people through messages sent,
+        and it will be used to find them. 
       operationId: setMyUserName
       requestBody:
         description: username
@@ -52,6 +92,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/username'
+            example:
+              Maria
         required: true
       responses:
         '401':
@@ -64,24 +106,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                code: 403
+                message: The username tried out is already in use
   /session/settings/profilepicture:
     put:
       tags: ["user settings"]
       summary: Sets profile picture
+      description: |-
+        It sets the profile picture of the logged in user.
+        This profile picture will be showed to other users.
       operationId: setMyPhoto
       requestBody:
         description: photo to be uploaded
         content:
           image/png:
             schema:
+              description: photo
               type: string
+              pattern: '^0b*'
+              minLength: 3
+              maxLength: 16
               format: binary
+            example: "0b00010010100"
         required: true
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '204':
-          description: Photo updated successfully
+          description: Prohile picture updated successfully
   /session/conversations:
     get:
       tags: ["conversations"]
@@ -118,6 +171,23 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/Chat'
                   - $ref: '#/components/schemas/Group'
+              example:
+                conversationid: 10
+                members:
+                - username: Fabio
+                  propic: "0b00010010100"
+                - username: Maria
+                  propic: "0b00010010110"
+                messages: 
+                - messageid: 1
+                  timestamp: "2017-07-21T17:32:28Z"
+                  content: Hello
+                  username: Mario
+                  checkmarks: 1
+                  comments: []
+                  replyingto: 20
+                groupname: Family
+                groupphoto: "0b00010010100" 
         '404':
           description: Conversation not found
           content:
@@ -138,6 +208,14 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/TextMessage'
                 - $ref: '#/components/schemas/PhotoMessage'
+            example:
+                messageid: 1
+                timestamp: "2017-07-21T17:32:28Z"
+                content: Hello
+                username: Mario
+                checkmarks: 1
+                comments: []
+                replyingto: 20
         required: true
       responses:
         '401':
@@ -145,7 +223,7 @@ paths:
         '204':
           description: Message sent
         '404':
-          description: Conversation not found
+          $ref: '#/components/responses/ConversationNotFound'
     delete:
       tags: ["groups"]
       summary: Leave a group
@@ -164,11 +242,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404': 
-          description: Conversation not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/ConversationNotFound'
   /session/conversations/{conversationid}/settings/groupname:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -182,8 +256,12 @@ paths:
         content:
           application/json:
             schema:
+              description: group name
               type: string
-              minLength: 1
+              pattern: '^*'
+              minLength: 3
+              maxLength: 16
+            example: Family
         required: true
       responses:
         '401':
@@ -191,11 +269,7 @@ paths:
         '204':
           description: Name updated successfully
         '404':
-          description: Conversation not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/ConversationNotFound'
   /session/conversations/{conversationid}/settings/grouphoto:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -210,20 +284,21 @@ paths:
         content:
           image/png:
             schema:
+              description: groupphoto
               type: string
+              pattern: '^0b*'
+              minLength: 3
+              maxLength: 16
               format: byte
+            example: "0b00010010100"
         required: true
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '204':
-          description: Photo updated successfully
+          description: Group photo updated successfully
         '404':
-          description: Conversation not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/ConversationNotFound'
   /session/conversations/{conversationid}/{messageid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -271,11 +346,7 @@ paths:
           '204':
             description: Message forwarded
           '404':
-            description: Conversation and/or message not found
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Error'
+            $ref: '#/components/responses/ConversationNotFound'
     delete:
       tags: ["messaging"]
       summary: Delete a message
@@ -294,11 +365,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Conversation and/or message not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/ConversationNotFound'
   /session/conversations/{conversationid}/{messageid}/{commentid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -346,6 +413,9 @@ paths:
                     $ref: '#/components/schemas/username'
                 group:
                     $ref: '#/components/schemas/conversationid'
+            example:
+              username: Paolo
+              group: 2050
         required: true
       responses:
         '401':
@@ -378,7 +448,7 @@ components:
       description: This object represents a username
       type: string
       example: Maria
-      pattern: 'ˆ.*?$'
+      pattern: '^*'
       minLength: 3
       maxLength: 16
     conversationid:
@@ -405,18 +475,30 @@ components:
           $ref: '#/components/schemas/username'
         propic:
           type: string
+          description: profile picture
           format: binary
+          pattern: '^0b*'
+          minLength: 3
+          maxLength: 16
+          example: "0b00010010100"
+      example:
+        username: Fabio
+        propic: "0b00010010100"
     Conversations:
       title: Conversations
       description: This object represents the whole list of a single user's Conversations
       type: object
       properties:
         members:
+          description: started chats
           type: array
           items:
             oneOf:
               - $ref: '#/components/schemas/ChatPreview'
               - $ref: '#/components/schemas/GroupPreview'
+          example: []
+      example:
+        members: []
     ChatPreview:
       title: ChatPreview
       description: "This object represents the preview of a single chat"
@@ -427,9 +509,23 @@ components:
         user:
           $ref: '#/components/schemas/User'
         lastmessage:
+          description: Preview of the last message
           oneOf:
             - $ref: '#/components/schemas/TextMessage'
             - $ref: '#/components/schemas/PhotoMessage'
+      example:
+        conversationid: 50
+        user:
+          username: Fabio
+          propic: "0b00010010100"
+        lastmessage:
+          messageid: 1
+          timestamp: "2017-07-21T17:32:28Z"
+          content: Hello
+          username: Mario
+          checkmarks: 1
+          comments: []
+          replyingto: 20
     Chat:
       title: Chat
       description: "This object represents a single private chat"
@@ -441,11 +537,33 @@ components:
           $ref: '#/components/schemas/User'
         messages:
           type: array
+          description: Messages of the chat
           items:
             oneOf:
               - $ref: '#/components/schemas/TextMessage'
               - $ref: '#/components/schemas/PhotoMessage'
           minItems: 1
+          example:
+            - messageid: 1
+              timestamp: "2017-07-21T17:32:28Z"
+              content: Hello
+              username: Mario
+              checkmarks: 1
+              comments: []
+              replyingto: 20
+      example:
+        conversationid: 50
+        user:
+          username: Fabio
+          propic: "0b00010010100"
+        messages:
+          - messageid: 1
+            timestamp: "2017-07-21T17:32:28Z"
+            content: Hello
+            username: Mario
+            checkmarks: 1
+            comments: []
+            replyingto: 20
     GroupPreview:
       title: GroupPreview
       description: "This object represents the preview of a single groupchat"
@@ -456,9 +574,23 @@ components:
         user:
           $ref: '#/components/schemas/User'
         lastmessage:
+          description: Preview of the last messsage
           oneOf:
             - $ref: '#/components/schemas/TextMessage'
             - $ref: '#/components/schemas/PhotoMessage'
+      example:
+        chatid: 50
+        user:
+          username: Fabio
+          propic: "0b00010010100"
+        lastmessage:
+          messageid: 1
+          timestamp: "2017-07-21T17:32:28Z"
+          content: Hello
+          username: Mario
+          checkmarks: 1
+          comments: []
+          replyingto: 20
     Group:
       title: Group
       description: "This object represents a single group"
@@ -468,22 +600,65 @@ components:
           $ref: '#/components/schemas/conversationid'
         members:
           type: array
+          description: group members
           items:
             $ref: '#/components/schemas/User'
           minItems: 2
           uniqueItems: true
+          example:
+            - username: Fabio
+              propic: "0b00010010100"
+            - username: Maria
+              propic: "0b00010010110"
         messages:
           type: array
+          description: Messages of the chat
           items:
             oneOf:
               - $ref: '#/components/schemas/TextMessage'
               - $ref: '#/components/schemas/PhotoMessage'
           minItems: 1
+          example:
+            - messageid: 1
+              timestamp: "2017-07-21T17:32:28Z"
+              content: Hello
+              username: Mario
+              checkmarks: 1
+              comments: []
+              replyingto: 20
         groupname:
           type: string
-        grouphoto:
+          description: Name of the group
+          pattern: '^*'
+          minLength: 3
+          maxLength: 16
+          example: Family
+        groupphoto:
           type: string
+          description: Photo of the group
           format: byte
+          pattern: '^0b*'
+          minLength: 3
+          maxLength: 16
+          example: "0b00010010100"
+      example:
+        conversationid: 10
+        members:
+          - username: Fabio
+            propic: "0b00010010100"
+          - username: Maria
+            propic: "0b00010010110"
+        messages: 
+          - messageid: 1
+            timestamp: "2017-07-21T17:32:28Z"
+            content: Hello
+            username: Mario
+            checkmarks: 1
+            comments: []
+            replyingto: 20
+        groupname: Family
+        groupphoto: "0b00010010100"
+
     TextMessage:
       title: TextMessage
       description: "This object represents a single text message"
@@ -493,27 +668,48 @@ components:
           $ref: '#/components/schemas/messageid'
         timestamp:
           type: string
+          description: Sent time of the message
           format: date-time
+          pattern: '^*'
+          minLength: 3
+          maxLength: 30
+          example: "2017-07-21T17:32:28Z"
         content:
           type: string
+          description: Text of the message
+          pattern: '^*'
           minLength: 1
+          maxLength: 16
+          example: Hello
         username:
           $ref: '#/components/schemas/username'     # sender's username
         checkmarks:
           type: number
+          description: A single checkmark means that all recipients have received the message; a double one that everyone has read
+          example: 1
           minimum: 0
           maximum: 2
         comments:
           type: array
+          description: Comments to the message
           items:
             $ref: '#/components/schemas/Comment'
           uniqueItems: true
+          example: []
         sentbyme:
+          description: Boolean indicating whether the message was sent by myself
           type: boolean
+          example: true
         replyingto:
-          oneOf:
-              - $ref: '#/components/schemas/TextMessage'
-              - $ref: '#/components/schemas/PhotoMessage'
+          $ref: '#/components/schemas/messageid'
+      example:
+        messageid: 1
+        timestamp: "2017-07-21T17:32:28Z"
+        content: Hello
+        username: Mario
+        checkmarks: 1
+        comments: []
+        replyingto: 20
     PhotoMessage:
       title: PhotoMessage
       description: "This object represents a single photo message"
@@ -523,27 +719,49 @@ components:
           $ref: '#/components/schemas/messageid'
         timestamp:
           type: string
+          description: Sent time of the message
+          pattern: '^*'
+          minLength: 3
+          maxLength: 30
           format: date-time
+          example: "2017-07-21T17:32:28Z"
         content:
           type: string
+          description: Text of the message
           format: byte
+          pattern: '^0b*'
+          minLength: 3
+          maxLength: 16
+          example: "0b00010010100"
         username:
           $ref: '#/components/schemas/username'     # sender's username
         checkmarks:
           type: number
+          description: A single checkmark means that all recipients have received the message; a double one that everyone has read
           minimum: 0
           maximum: 2
+          example: 1
         comments:
           type: array
+          description: Comments to the message
           items:
             $ref: '#/components/schemas/Comment'
           uniqueItems: true
+          example: []
         replyingto:
-          oneOf:
-              - $ref: '#/components/schemas/TextMessage'
-              - $ref: '#/components/schemas/PhotoMessage'
+          $ref: '#/components/schemas/messageid'
         sentbyme:
           type: boolean
+          description: Boolean indicating whether the message was sent by myself
+          example: true
+      example:
+        messageid: 1
+        timestamp: "2017-07-21T17:32:28Z"
+        content: "0b00010010100"
+        username: Mario
+        checkmarks: 1
+        comments: []
+        replyingto: 20
     Comment:
       title: Comment
       description: "This object represents a single comment to a message"
@@ -555,30 +773,47 @@ components:
           $ref: '#/components/schemas/username'
         reaction:
           type: string
+          description: Reaction emoji
+          pattern: '^*'
+          minLength: 3
+          maxLength: 16
           enum: ["laugh", "sad", "thumbs_up", "surprised", "love", "pray"]
+          example: sad
         sentbyme:
+          description: Boolean indicating whether the message was sent by myself          
           type: boolean
+          example: false
+      example:
+        commentid: 15
+        sender: Gioia
+        reaction: sad
+        sentbyme: false
     Error:
       type: object
+      description: A generic error message
       properties:
         code:
-          type: string
+          description: HTTP error code
+          type: number
+          example: 401
         message:
+          description: error message
           type: string
+          pattern: '^*'
+          minLength: 3
+          maxLength: 50
+          example: UnauthorizedError
       required:
         - code
         - message
+      example:
+        code: 401
+        message: UnauthorizedError
   parameters:
-    username:
-      schema:
-        $ref: '#/components/schemas/username'  
-      name: username
-      in: path
-      description: Username
-      required: true
     conversationid:
       schema:
         $ref: '#/components/schemas/conversationid'
+      example: 1
       name: conversationid
       in: path
       description: ID of every conversation, associated both with the preview and the actual conversation
@@ -586,6 +821,7 @@ components:
     messageid:
       schema:
         $ref: '#/components/schemas/messageid'
+      example: 1
       name: messageid
       in: path
       description: id of a single message
@@ -593,6 +829,7 @@ components:
     commentid:
       schema:
         $ref: '#/components/schemas/commentid'
+      example: 1
       name: commentid
       in: path
       description: id of a single comment
@@ -604,10 +841,22 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-  
+          example:
+            code: 401
+            message: UnauthorizedError 
+    ConversationNotFound:
+        description: The conversation id give was not found
+        content:
+            application/json:
+                schema:
+                    $ref: '#/components/schemas/Error'
+                example:
+                  code: 401
+                  message: UnauthorizedError
   securitySchemes:
     userID: # arbitrary name for the security scheme
       type: http
+      description: The logging token of a single user
       scheme: bearer
       bearerFormat: JWT  # optional, for documentation purposes only
 
