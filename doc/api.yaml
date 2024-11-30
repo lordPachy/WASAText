@@ -46,8 +46,9 @@ paths:
               properties:
                 name:
                   type: string
+                  description: The user identifier
                   example: Maria
-                  pattern: '^*'
+                  pattern: ^\w{3,16}$
                   minLength: 3
                   maxLength: 16
               example:
@@ -68,7 +69,8 @@ paths:
                 properties:
                   identifier:
                     type: string
-                    pattern: '^*'
+                    description: access token
+                    pattern: ^[\w-$!&/(),.]{4,16}$
                     minLength: 4
                     maxLength: 16
                     example: "abcdef012345"
@@ -77,7 +79,7 @@ paths:
                     properties:
                       identifier: alsdfkgnj34902857
 
-  /session/settings/username:
+  /settings/username:
     put:
       tags: ["user settings"]
       summary: Sets username
@@ -91,14 +93,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/username'
+              type: object
+              description: username
+              properties:
+                value:
+                  $ref: '#/components/schemas/Username'
             example:
-              Maria
+              value: Maria
         required: true
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
+        '202':
           description: Username updated successfully
         '403':
           description: Username already in use
@@ -109,7 +115,7 @@ paths:
               example:
                 code: 403
                 message: The username tried out is already in use
-  /session/settings/profilepicture:
+  /settings/profilepicture:
     put:
       tags: ["user settings"]
       summary: Sets profile picture
@@ -124,7 +130,7 @@ paths:
             schema:
               description: photo
               type: string
-              pattern: '^0b*'
+              pattern: ^0b[01]{1,14}$
               minLength: 3
               maxLength: 16
               format: binary
@@ -133,9 +139,9 @@ paths:
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
-          description: Prohile picture updated successfully
-  /session/conversations:
+        '202':
+          description: Profile picture updated successfully
+  /conversations:
     get:
       tags: ["conversations"]
       summary: Gets all conversations
@@ -151,7 +157,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Conversations'
-  /session/conversations/{conversationid}:
+  /groups:
+    put:
+      tags: ["groups"]
+      summary: Add to group
+      description: |-
+        It adds a person to a group via a username. If the group does not exist, it creates it. If the adder is not in the group, an error is thrown.
+      operationId: addToGroup
+      requestBody:
+        description: user and group
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing username and conversationid (of a group)
+              properties:
+                username:
+                    $ref: '#/components/schemas/Username'
+                group:
+                    $ref: '#/components/schemas/ConversationID'
+            example:
+              username: Paolo
+              group: 2050
+        required: true
+      responses:
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '201':
+          description: A new group with that user has been created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '200':
+          description: User added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '403':
+          description: Users can only be added in groups the adder takes part in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation and/or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /conversations/{conversationid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     get:
@@ -172,22 +228,18 @@ paths:
                   - $ref: '#/components/schemas/Chat'
                   - $ref: '#/components/schemas/Group'
               example:
-                conversationid: 10
-                members:
-                - username: Fabio
+                conversationid: 50
+                user:
+                  username: Fabio
                   propic: "0b00010010100"
-                - username: Maria
-                  propic: "0b00010010110"
-                messages: 
-                - messageid: 1
-                  timestamp: "2017-07-21T17:32:28Z"
-                  content: Hello
-                  username: Mario
-                  checkmarks: 1
-                  comments: []
-                  replyingto: 20
-                groupname: Family
-                groupphoto: "0b00010010100" 
+                messages:
+                  - messageid: 1
+                    timestamp: "2017-07-21T17:32:28Z"
+                    content: Hello
+                    username: Mario
+                    checkmarks: 1
+                    comments: []
+                    replyingto: 20
         '404':
           description: Conversation not found
           content:
@@ -205,9 +257,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/TextMessage'
-                - $ref: '#/components/schemas/PhotoMessage'
+                $ref: '#/components/schemas/Message'
             example:
                 messageid: 1
                 timestamp: "2017-07-21T17:32:28Z"
@@ -243,7 +293,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404': 
           $ref: '#/components/responses/ConversationNotFound'
-  /session/conversations/{conversationid}/settings/groupname:
+  /conversations/{conversationid}/settings/groupname:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     put:
@@ -257,20 +307,25 @@ paths:
           application/json:
             schema:
               description: group name
-              type: string
-              pattern: '^*'
-              minLength: 3
-              maxLength: 16
-            example: Family
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: string value
+                  pattern: ^\w{3,16}$
+                  minLength: 3
+                  maxLength: 16
+              example:
+                value: Family
         required: true
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
+        '202':
           description: Name updated successfully
         '404':
           $ref: '#/components/responses/ConversationNotFound'
-  /session/conversations/{conversationid}/settings/grouphoto:
+  /conversations/{conversationid}/settings/grouphoto:
     parameters:
       - $ref: '#/components/parameters/conversationid'
     put:
@@ -285,21 +340,26 @@ paths:
           image/png:
             schema:
               description: groupphoto
-              type: string
-              pattern: '^0b*'
-              minLength: 3
-              maxLength: 16
-              format: byte
-            example: "0b00010010100"
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: A photo file in Base64 encoding.
+                  pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,}$
+                  minLength: 3
+                  maxLength: 16
+                  format: byte
+              example:
+                value: Y2lhbw==
         required: true
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
+        '202':
           description: Group photo updated successfully
         '404':
           $ref: '#/components/responses/ConversationNotFound'
-  /session/conversations/{conversationid}/{messageid}:
+  /conversations/{conversationid}/messages/{messageid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
@@ -319,8 +379,12 @@ paths:
       responses:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
+        '201':
           description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
         '404':
           description: Conversation and/or message not found
           content:
@@ -338,7 +402,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/conversationid'
+                type: object
+                description: The id of the conversation
+                properties:
+                  value:
+                    $ref: '#/components/schemas/ConversationID'
           required: true
         responses:
           '401':
@@ -366,7 +434,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/ConversationNotFound'
-  /session/conversations/{conversationid}/{messageid}/{commentid}:
+  /conversations/{conversationid}/messages/{messageid}/comments/{commentid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
       - $ref: '#/components/parameters/messageid'
@@ -394,90 +462,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /session/conversations/new:
-    put:
-      tags: ["groups"]
-      summary: Add to group
-      description: |-
-        It adds a person to a group via a username. If the group does not exist, it creates it. If the adder is not in the group, an error is thrown.
-      operationId: addToGroup
-      requestBody:
-        description: user and group
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                    $ref: '#/components/schemas/username'
-                group:
-                    $ref: '#/components/schemas/conversationid'
-            example:
-              username: Paolo
-              group: 2050
-        required: true
-      responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '202':
-          description: A new group with that user has been created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Group'
-        '204':
-          description: User added successfully
-        '403':
-          description: Users can only be added in groups the adder takes part in
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Conversation and/or user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+    
 
 components:
   schemas:
-    username:
+    Username:
       title: username
       description: This object represents a username
       type: string
       example: Maria
-      pattern: '^*'
+      pattern: ^\w{3,16}$
       minLength: 3
       maxLength: 16
-    conversationid:
+    ConversationID:
       title: conversationid
       description: This object represents a conversation id
       type: integer
       example: 1
-    messageid:
+      minimum: 0
+      maximum: 100000
+    MessageID:
       title: message id
       description: This object represents a message id
       type: integer
       example: 1
-    commentid:
+      minimum: 0
+      maximum: 100000
+    CommentID:
       title: comment id
       description: This object represents a comment id
       type: integer
       example: 1
+      minimum: 0
+      maximum: 100000
     User:
       title: User
       description: This object represents a single user
       type: object
       properties:
         username:
-          $ref: '#/components/schemas/username'
+          $ref: '#/components/schemas/Username'
         propic:
           type: string
           description: profile picture
           format: binary
-          pattern: '^0b*'
+          pattern: ^0b[01]{1,14}$
           minLength: 3
           maxLength: 16
           example: "0b00010010100"
@@ -488,31 +517,32 @@ components:
       title: Conversations
       description: This object represents the whole list of a single user's Conversations
       type: object
+      required:
+        - conversations
       properties:
-        members:
+        conversations:
           description: started chats
           type: array
+          minItems: 0
+          maxItems: 1000
           items:
             oneOf:
               - $ref: '#/components/schemas/ChatPreview'
               - $ref: '#/components/schemas/GroupPreview'
           example: []
       example:
-        members: []
+        conversations: []
     ChatPreview:
       title: ChatPreview
       description: "This object represents the preview of a single chat"
       type: object
       properties:
         chatid:
-          $ref: '#/components/schemas/conversationid'
+          $ref: '#/components/schemas/ConversationID'
         user:
           $ref: '#/components/schemas/User'
         lastmessage:
-          description: Preview of the last message
-          oneOf:
-            - $ref: '#/components/schemas/TextMessage'
-            - $ref: '#/components/schemas/PhotoMessage'
+          $ref: '#/components/schemas/Message'
       example:
         conversationid: 50
         user:
@@ -530,19 +560,20 @@ components:
       title: Chat
       description: "This object represents a single private chat"
       type: object
+      required:
+        - messages
       properties:
         conversationid:
-          $ref: '#/components/schemas/conversationid'
+          $ref: '#/components/schemas/ConversationID'
         user:
           $ref: '#/components/schemas/User'
         messages:
           type: array
           description: Messages of the chat
           items:
-            oneOf:
-              - $ref: '#/components/schemas/TextMessage'
-              - $ref: '#/components/schemas/PhotoMessage'
+              $ref: '#/components/schemas/Message'
           minItems: 1
+          maxItems: 1000
           example:
             - messageid: 1
               timestamp: "2017-07-21T17:32:28Z"
@@ -570,14 +601,11 @@ components:
       type: object
       properties:
         chatid:
-          $ref: '#/components/schemas/conversationid'
+          $ref: '#/components/schemas/ConversationID'
         user:
           $ref: '#/components/schemas/User'
         lastmessage:
-          description: Preview of the last messsage
-          oneOf:
-            - $ref: '#/components/schemas/TextMessage'
-            - $ref: '#/components/schemas/PhotoMessage'
+          $ref: '#/components/schemas/Message'
       example:
         chatid: 50
         user:
@@ -595,15 +623,20 @@ components:
       title: Group
       description: "This object represents a single group"
       type: object
+      required:
+        - members
+        - messages
+        - groupname
       properties:
         conversationid:
-          $ref: '#/components/schemas/conversationid'
+          $ref: '#/components/schemas/ConversationID'
         members:
           type: array
           description: group members
           items:
             $ref: '#/components/schemas/User'
           minItems: 2
+          maxItems: 1000
           uniqueItems: true
           example:
             - username: Fabio
@@ -614,10 +647,9 @@ components:
           type: array
           description: Messages of the chat
           items:
-            oneOf:
-              - $ref: '#/components/schemas/TextMessage'
-              - $ref: '#/components/schemas/PhotoMessage'
+            $ref: '#/components/schemas/Message'
           minItems: 1
+          maxItems: 1000
           example:
             - messageid: 1
               timestamp: "2017-07-21T17:32:28Z"
@@ -629,18 +661,18 @@ components:
         groupname:
           type: string
           description: Name of the group
-          pattern: '^*'
+          pattern: ^\w{3,16}$
           minLength: 3
           maxLength: 16
           example: Family
         groupphoto:
           type: string
           description: Photo of the group
-          format: byte
-          pattern: '^0b*'
+          pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,}$
           minLength: 3
           maxLength: 16
-          example: "0b00010010100"
+          format: byte
+          example: Y2lhbw==
       example:
         conversationid: 10
         members:
@@ -657,32 +689,42 @@ components:
             comments: []
             replyingto: 20
         groupname: Family
-        groupphoto: "0b00010010100"
+        groupphoto: Y2lhbw==
 
-    TextMessage:
-      title: TextMessage
-      description: "This object represents a single text message"
+    Message:
+      title: Message
+      description: "This object represents a single message"
       type: object
+      required:
+        - comments
       properties:
         messageid:
-          $ref: '#/components/schemas/messageid'
+          $ref: '#/components/schemas/MessageID'
         timestamp:
           type: string
           description: Sent time of the message
           format: date-time
-          pattern: '^*'
-          minLength: 3
-          maxLength: 30
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$
+          minLength: 20
+          maxLength: 20
           example: "2017-07-21T17:32:28Z"
         content:
           type: string
           description: Text of the message
-          pattern: '^*'
+          pattern: ^.{1,300}$
           minLength: 1
-          maxLength: 16
+          maxLength: 300
           example: Hello
+        photo:
+          type: string
+          description: A photo file in Base64 encoding.
+          pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,}$
+          minLength: 3
+          maxLength: 16
+          format: byte
+          example: Y2lhbw==
         username:
-          $ref: '#/components/schemas/username'     # sender's username
+          $ref: '#/components/schemas/Username'     # sender's username
         checkmarks:
           type: number
           description: A single checkmark means that all recipients have received the message; a double one that everyone has read
@@ -691,6 +733,8 @@ components:
           maximum: 2
         comments:
           type: array
+          minItems: 0
+          maxItems: 1000
           description: Comments to the message
           items:
             $ref: '#/components/schemas/Comment'
@@ -701,7 +745,7 @@ components:
           type: boolean
           example: true
         replyingto:
-          $ref: '#/components/schemas/messageid'
+          $ref: '#/components/schemas/MessageID'
       example:
         messageid: 1
         timestamp: "2017-07-21T17:32:28Z"
@@ -710,73 +754,23 @@ components:
         checkmarks: 1
         comments: []
         replyingto: 20
-    PhotoMessage:
-      title: PhotoMessage
-      description: "This object represents a single photo message"
-      type: object
-      properties:
-        messageid:
-          $ref: '#/components/schemas/messageid'
-        timestamp:
-          type: string
-          description: Sent time of the message
-          pattern: '^*'
-          minLength: 3
-          maxLength: 30
-          format: date-time
-          example: "2017-07-21T17:32:28Z"
-        content:
-          type: string
-          description: Text of the message
-          format: byte
-          pattern: '^0b*'
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
-        username:
-          $ref: '#/components/schemas/username'     # sender's username
-        checkmarks:
-          type: number
-          description: A single checkmark means that all recipients have received the message; a double one that everyone has read
-          minimum: 0
-          maximum: 2
-          example: 1
-        comments:
-          type: array
-          description: Comments to the message
-          items:
-            $ref: '#/components/schemas/Comment'
-          uniqueItems: true
-          example: []
-        replyingto:
-          $ref: '#/components/schemas/messageid'
-        sentbyme:
-          type: boolean
-          description: Boolean indicating whether the message was sent by myself
-          example: true
-      example:
-        messageid: 1
-        timestamp: "2017-07-21T17:32:28Z"
-        content: "0b00010010100"
-        username: Mario
-        checkmarks: 1
-        comments: []
-        replyingto: 20
     Comment:
       title: Comment
       description: "This object represents a single comment to a message"
       type: object
+      required: 
+        - reaction
       properties:
         commentid:
-          $ref: '#/components/schemas/commentid'
+          $ref: '#/components/schemas/CommentID'
         sender:
-          $ref: '#/components/schemas/username'
+          $ref: '#/components/schemas/Username'
         reaction:
           type: string
           description: Reaction emoji
-          pattern: '^*'
+          pattern: ^\w{3,9}$
           minLength: 3
-          maxLength: 16
+          maxLength: 9
           enum: ["laugh", "sad", "thumbs_up", "surprised", "love", "pray"]
           example: sad
         sentbyme:
@@ -799,9 +793,9 @@ components:
         message:
           description: error message
           type: string
-          pattern: '^*'
-          minLength: 3
-          maxLength: 50
+          pattern: ^.{1,300}$
+          minLength: 1
+          maxLength: 300
           example: UnauthorizedError
       required:
         - code
@@ -809,10 +803,11 @@ components:
       example:
         code: 401
         message: UnauthorizedError
+
   parameters:
     conversationid:
       schema:
-        $ref: '#/components/schemas/conversationid'
+        $ref: '#/components/schemas/ConversationID'
       example: 1
       name: conversationid
       in: path
@@ -820,7 +815,7 @@ components:
       required: true
     messageid:
       schema:
-        $ref: '#/components/schemas/messageid'
+        $ref: '#/components/schemas/MessageID'
       example: 1
       name: messageid
       in: path
@@ -828,7 +823,7 @@ components:
       required: true
     commentid:
       schema:
-        $ref: '#/components/schemas/commentid'
+        $ref: '#/components/schemas/CommentID'
       example: 1
       name: commentid
       in: path
