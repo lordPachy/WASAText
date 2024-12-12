@@ -102,6 +102,15 @@ paths:
               value: Maria
         required: true
       responses:
+        '400':
+          description: Username parsed incorrectly or not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                message: The username is not valid
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '202':
@@ -137,6 +146,15 @@ paths:
             example: "0b00010010100"
         required: true
       responses:
+        '400':
+            description: ProPic parsed incorrectly or not valid
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+                example:
+                  code: 400
+                  message: The picture is not valid
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '202':
@@ -268,10 +286,19 @@ paths:
                 replyingto: 20
         required: true
       responses:
+        '204':
+            description: Message sent
+        '400':
+            description: Message parsed incorrectly or not valid
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+                example:
+                  code: 400
+                  message: The message is not valid
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
-          description: Message sent
         '404':
           $ref: '#/components/responses/ConversationNotFound'
     delete:
@@ -480,21 +507,21 @@ components:
       type: integer
       example: 1
       minimum: 0
-      maximum: 100000
+      maximum: 10000
     MessageID:
       title: message id
       description: This object represents a message id
       type: integer
       example: 1
       minimum: 0
-      maximum: 100000
+      maximum: 10000
     CommentID:
       title: comment id
       description: This object represents a comment id
       type: integer
       example: 1
       minimum: 0
-      maximum: 100000
+      maximum: 10000
     User:
       title: User
       description: This object represents a single user
@@ -840,13 +867,13 @@ components:
             code: 401
             message: UnauthorizedError 
     ConversationNotFound:
-        description: The conversation id give was not found
+        description: The conversation id given was not found
         content:
             application/json:
                 schema:
                     $ref: '#/components/schemas/Error'
                 example:
-                  code: 401
+                  code: 404
                   message: UnauthorizedError
   securitySchemes:
     userID: # arbitrary name for the security scheme
