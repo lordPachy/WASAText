@@ -31,7 +31,7 @@ type Message struct {
 	Content    string    `json:"content"`
 	Photo      string    `json:"string"`
 	Username   string    `json:"username"`
-	Checkmarks string    `json:"checkmarks"`
+	Checkmarks int       `json:"checkmarks"`
 	Comments   []Comment `json:"comments"`
 	SentByMe   bool      `json:"sentbyme"`
 	ReplyingTo int       `json:"replyingto"`

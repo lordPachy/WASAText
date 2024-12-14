@@ -45,6 +45,9 @@ type AppDatabase interface {
 	ChangeUsername(oldUsername string, newUserName string) error
 	ChangeProPic(username string, newPhoto string) error
 	Ping() error
+	CheckUsername(username string) bool
+	CheckMessage(messageid string) bool
+	CheckChat(conversationid string, username string) bool
 }
 
 type appdbimpl struct {
