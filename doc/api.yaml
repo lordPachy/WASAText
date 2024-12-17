@@ -30,10 +30,9 @@ paths:
   /session:
     post:
       tags: ["login"]
+      security: []
       summary: Logs in the user
       description: |-
-        If the user does not exist, it will be created,
-        and an identifier is returned.
         If the user exists, the user identifier is returned.
       operationId: doLogin
       requestBody:
@@ -57,27 +56,94 @@ paths:
                     name: Maria
         required: true
       responses:
+        '201':
+            description: User log-in action successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  description: access token
+                  properties:
+                    identifier:
+                      type: string
+                      description: access token
+                      pattern: ^[\w-$!&/(),.]{4,16}$
+                      minLength: 4
+                      maxLength: 16
+                      example: "abcdef012345"
+                  example:
+                    UserToken:
+                      properties:
+                        identifier: alsdfkgnj34902857
+        '400':
+            description: Username parsed incorrectly or not valid
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+                example:
+                  code: 400
+                  message: The username is not valid
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags: ["login"]
+      security: []
+      summary: Creates a user
+      description: |-
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, an error will be returned.
+      operationId: createUser
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Username
+              properties:
+                name:
+                  type: string
+                  description: The user identifier
+                  example: Maria
+                  pattern: ^\w{3,16}$
+                  minLength: 3
+                  maxLength: 16
+              example:
+                UserExample:
+                  properties:
+                    name: Maria
+        required: true
+      responses:
         '201':
-          description: User log-in action successful
-          content:
-            application/json:
-              schema:
-                type: object
-                description: access token
-                properties:
-                  identifier:
-                    type: string
-                    description: access token
-                    pattern: ^[\w-$!&/(),.]{4,16}$
-                    minLength: 4
-                    maxLength: 16
-                    example: "abcdef012345"
+            description: User creation action successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  description: access token
+                  properties:
+                    identifier:
+                      type: string
+                      description: access token
+                      pattern: ^[\w-$!&/(),.]{4,16}$
+                      minLength: 4
+                      maxLength: 16
+                      example: "abcdef012345"
+                  example:
+                    UserToken:
+                      properties:
+                        identifier: alsdfkgnj34902857
+        '400':
+            description: Username parsed incorrectly or not valid
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
                 example:
-                  UserToken:
-                    properties:
-                      identifier: alsdfkgnj34902857
+                  code: 400
+                  message: The username is not valid
 
   /settings/username:
     put:

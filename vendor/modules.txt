@@ -17,6 +17,9 @@ github.com/gorilla/handlers
 github.com/julienschmidt/httprouter
 # github.com/kr/pretty v0.1.0
 ## explicit
+# github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb
+## explicit
+github.com/lucasjones/reggen
 # github.com/mattn/go-sqlite3 v1.14.24
 ## explicit; go 1.19
 github.com/mattn/go-sqlite3
