@@ -144,6 +144,15 @@ paths:
                 example:
                   code: 400
                   message: The username is not valid
+        '403':
+            description: Username already in use
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+                example:
+                  code: 403
+                  message: The username is already in use
 
   /settings/username:
     put:

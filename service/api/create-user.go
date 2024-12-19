@@ -27,10 +27,10 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// Setting the new username and uniqueness check
-	err = rt.db.CreateUser(newUsername)
+	// Uniqueness check
+	not_uniq := rt.db.CheckUsername(newUsername.Name)
 
-	if err != nil {
+	if not_uniq {
 		w.WriteHeader(http.StatusForbidden)
 		forbiddenError := Response{
 			Code:    403,
@@ -41,6 +41,11 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Accepted request
-	w.Header().Set("content-type", "text-plain")
+	_ = rt.db.CreateUser(newUsername.Name)
 	w.WriteHeader(http.StatusCreated)
+	id, _ := rt.db.GetIdentifier(newUsername.Name)
+	newToken := Access_token{
+		Identifier: id,
+	}
+	json.NewEncoder(w).Encode(newToken)
 }

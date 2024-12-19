@@ -48,6 +48,7 @@ type AppDatabase interface {
 	CheckUsername(username string) bool
 	CheckMessage(messageid string) bool
 	CheckChat(conversationid string, username string) bool
+	CreateUser(newUsername string) error
 }
 
 type appdbimpl struct {
@@ -63,9 +64,11 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	// Check if table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
-	err := db.QueryRow(`SELECT username FROM users;`).Scan(&tableName)
+	_ = db.QueryRow(`SELECT username FROM users;`).Scan(&tableName)
 	// If not, the database is empty, and we need to create the structure
-	if err.Error() != "sql: no rows in result set" {
+	//if err.Error() != "sql: no rows in result set" {
+	if true {
+
 		file, err := os.ReadFile("./service/database/db_init.sql")
 		if err != nil {
 			return nil, fmt.Errorf("error opening the sql file for database creation")

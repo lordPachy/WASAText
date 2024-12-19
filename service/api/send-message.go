@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -78,7 +79,7 @@ func checkMessageCorrectness(newMessage Message, rt *_router) bool {
 	checkmarks := newMessage.Checkmarks == 0
 	comments := len(newMessage.Comments) == 0
 	sentbyme := newMessage.SentByMe
-	replyingto := rt.db.CheckMessage(string(newMessage.MessageID))
+	replyingto := rt.db.CheckMessage(strconv.Itoa(newMessage.MessageID))
 
 	correctness := id && timestamp1 && timestamp2 && no_content && message_validity && user && checkmarks && comments && sentbyme && replyingto
 

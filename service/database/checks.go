@@ -1,10 +1,10 @@
 package database
 
-// Check if a user exists, and returns a boolean accordingly
+// Check if a user exists, and returns true if it exists
 func (db *appdbimpl) CheckUsername(username string) bool {
 	var tmp string
 	err := db.c.QueryRow("SELECT id FROM users WHERE username=" + username + ";").Scan(&tmp)
-	return err != nil
+	return err == nil
 }
 
 // Check if a message exists, and returns a boolean accordingly
