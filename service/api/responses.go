@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -25,19 +27,18 @@ var ConversationOrMessageOrCommentNotFound = Response{
 	Message: "Not found: Conversation/Message/Comment id given was not found.",
 }
 
-func (rt *_router) authorization(w http.ResponseWriter, r *http.Request) (Username, error) {
-	var user Username
-	id := r.Header.Get("Authorization")
+func (rt *_router) authorization(w http.ResponseWriter, r *http.Request) (string, error) {
+	id := r.Header.Get("Authentication")
 
 	// If the id is not in the database, throw an unauthorized error; otherwise return the username
-	name, err := rt.db.GetIdentifier(id)
-	if err != nil {
+	check := rt.db.CheckIdentifier(id)
+	if !check {
+		fmt.Println("I'm in an error state!")
 		w.Header().Set("content-type", "text/plain")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(UnauthorizedError)
-		return user, err
-	} else {
-		user.Name = name
-		return user, err
+		return "", errors.New("Unauthorized")
 	}
+
+	return id, nil
 }

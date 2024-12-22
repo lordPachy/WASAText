@@ -16,7 +16,7 @@ import (
 // 3. Adding to the chat database
 func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Authentication
-	username, err := rt.authorization(w, r)
+	id, err := rt.authorization(w, r)
 	if err != nil {
 		w.Header().Set("content-type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -26,7 +26,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Checking whether the conversation exists
 	convo := ps.ByName("conversationid")
-	convo_check := rt.db.CheckChat(convo, username.Name)
+	convo_check := rt.db.CheckChat(convo, id)
 
 	if !convo_check {
 		w.Header().Set("content-type", "application/json")

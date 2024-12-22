@@ -14,7 +14,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	var newUsername Username
 
 	// Authentication
-	oldUsername, err := rt.authorization(w, r)
+	id, err := rt.authorization(w, r)
 	if err != nil {
 		return
 	}
@@ -34,12 +34,12 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Setting the new username and uniqueness check
-	err = rt.db.ChangeUsername(oldUsername.Name, newUsername.Name)
+	err = rt.db.ChangeUsername(id, newUsername.Name)
 
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		forbiddenError := Response{
-			Code:    400,
+			Code:    403,
 			Message: "The username tried out is already in use",
 		}
 		json.NewEncoder(w).Encode(forbiddenError)
@@ -48,5 +48,5 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 
 	// Accepted request
 	w.Header().Set("content-type", "text-plain")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusNoContent)
 }

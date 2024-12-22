@@ -1,9 +1,16 @@
 package database
 
-// Check if a user exists, and returns true if it exists
+// Check if a user exists given its username, and returns true if it exists
 func (db *appdbimpl) CheckUsername(username string) bool {
 	var tmp string
 	err := db.c.QueryRow("SELECT id FROM users WHERE username=" + username + ";").Scan(&tmp)
+	return err == nil
+}
+
+// Check if a user exists given its identifier, and returns true if it exists
+func (db *appdbimpl) CheckIdentifier(id string) bool {
+	var tmp string
+	err := db.c.QueryRow("SELECT id FROM users WHERE id=" + id + ";").Scan(&tmp)
 	return err == nil
 }
 

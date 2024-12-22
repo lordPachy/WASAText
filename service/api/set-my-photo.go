@@ -11,11 +11,10 @@ import (
 // It sets a user's profile picture. It returns error if the picture is wrongly formatted.
 func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("content-type", "application/json")
-	var username Username
 	var newPhoto string
 
 	// Authentication
-	username, err := rt.authorization(w, r)
+	id, err := rt.authorization(w, r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(UnauthorizedError)
@@ -37,7 +36,7 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Loading the photo on the database
-	err = rt.db.ChangeProPic(username.Name, newPhoto)
+	err = rt.db.ChangeProPic(id, newPhoto)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
