@@ -7,18 +7,19 @@ import (
 // Handler returns an instance of httprouter.Router that handle APIs registered here
 func (rt *_router) Handler() http.Handler {
 	// Register routes
-	rt.router.POST("/session", rt.doLogin)
 	rt.router.PUT("/session", rt.createUser)
+	rt.router.POST("/session", rt.doLogin)
+	rt.router.POST("/tests/database", rt.testDatabase)
 
 	// Settings methods
-	rt.router.PUT("/settings/username", rt.setMyUserName)
-	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
+	//	rt.router.PUT("/settings/username", rt.setMyUserName)
+	//	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
 
 	// Conversation methods
 	rt.router.GET("/conversations", rt.getMyConversations)
 
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)
-	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
+	//	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
 	rt.router.DELETE("/conversations/:conversationid", rt.leaveGroup)
 
 	rt.router.PUT("/conversations/:conversationid/settings/groupname", rt.setGroupName)

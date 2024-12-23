@@ -2,35 +2,62 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
+
+	"github.com/lucasjones/reggen"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// It sets a user's profile picture. It returns error if the picture is wrongly formatted.
+// It creates a user.
 func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("content-type", "application/json")
 	var newUsername Username
 
-	// Getting the new username and validity check
+	// Getting the new username
 	err := json.NewDecoder(r.Body).Decode(&newUsername)
-	err_constraints, _ := regexp.MatchString(`\w{3,16}`, newUsername.Name)
-
-	if err != nil || !(err_constraints) {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		forbiddenError := Response{
+		badRequest := Response{
 			Code:    400,
-			Message: "The username is not valid",
+			Message: "The received body is not a username",
 		}
-		json.NewEncoder(w).Encode(forbiddenError)
+		json.NewEncoder(w).Encode(badRequest)
+		return
+	}
+
+	// Checking if the username is valid
+	match, err := regexp.MatchString(`^\w{3,16}$`, newUsername.Name)
+
+	if err != nil {
+		regexError := BackendError{
+			Affinity: "User creation",
+			Message:  "The string matching mechanism for id creation has failed",
+			OG_error: err,
+		}
+		fmt.Println(regexError.Error())
+		return
+	}
+	if !match {
+		w.WriteHeader(http.StatusBadRequest)
+		badUsername := Response{
+			Code:    400,
+			Message: "The username is not valid (it may be too short, or long, or containing not valid characters)",
+		}
+		json.NewEncoder(w).Encode(badUsername)
 		return
 	}
 
 	// Uniqueness check
-	not_uniq := rt.db.CheckUsername(newUsername.Name)
+	other_users, err := UsernameRetrieval(newUsername, rt)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
-	if not_uniq {
+	if len(other_users) > 0 {
 		w.WriteHeader(http.StatusForbidden)
 		forbiddenError := Response{
 			Code:    403,
@@ -41,11 +68,99 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Accepted request
-	_ = rt.db.CreateUser(newUsername.Name)
+	// Creating the id
+	id, err := IdCreator(rt)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Inserting the user into the database
+	_, err = rt.db.Insert("users", fmt.Sprintf("('%s', '%s', Null)", id, newUsername.Name))
+	if err != nil {
+		insertionError := BackendError{
+			Affinity: "User creation",
+			Message:  "Inserting the new user into the database has failed",
+			OG_error: err,
+		}
+		fmt.Println(insertionError.Error())
+	}
+
+	// Writing the response in HTTP
 	w.WriteHeader(http.StatusCreated)
-	id, _ := rt.db.GetIdentifier(newUsername.Name)
 	newToken := Access_token{
 		Identifier: id,
 	}
-	json.NewEncoder(w).Encode(newToken)
+	err = json.NewEncoder(w).Encode(newToken)
+	if err != nil {
+		encodingError := BackendError{
+			Affinity: "User creation",
+			Message:  "Encoding the new access token has failed",
+			OG_error: err,
+		}
+		fmt.Println(encodingError.Error())
+		return
+	}
+}
+
+func UsernameRetrieval(username Username, rt *_router) ([]string, error) {
+	// SQL query
+	rows, err := rt.db.Select("*", "users", fmt.Sprintf("username = '%s'", username.Name))
+	if err != nil {
+		selectionError := BackendError{
+			Affinity: "User retrieval",
+			Message:  "SELECT in the database seeking users with the same username failed",
+			OG_error: err,
+		}
+		return nil, &selectionError
+	}
+
+	// Reading the rows
+	other_users, err := UsersRowReading(rows)
+
+	if err != nil {
+		uniquenessError := BackendError{
+			Affinity: "User retrieval",
+			Message:  "Reading the database rows that were seeking users with the same username failed",
+			OG_error: err,
+		}
+		fmt.Println(uniquenessError.Error())
+		return nil, &uniquenessError
+	}
+
+	return other_users, nil
+}
+
+func IdCreator(rt *_router) (string, error) {
+	var id string
+
+	for {
+		id, _ = reggen.Generate("^[0-9A-Za-z-$&/(),.]{4,16}$", 16)
+		rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id))
+		if err != nil {
+			selectionError := BackendError{
+				Affinity: "User creation",
+				Message:  "SELECT in the database seeking users with the same id failed",
+				OG_error: err,
+			}
+			fmt.Println(selectionError.Error())
+			return "", &selectionError
+		}
+
+		// Checking that the new id is unique
+		other_users, err := UsersRowReading(rows)
+
+		if err != nil {
+			idUniquenessError := BackendError{
+				Affinity: "User creation",
+				Message:  "Reading the database rows that were seeking users with the same id failed",
+				OG_error: err,
+			}
+			return "", &idUniquenessError
+		} else if len(other_users) == 0 {
+			break
+		}
+	}
+
+	return id, nil
 }

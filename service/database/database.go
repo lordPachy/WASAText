@@ -40,16 +40,9 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
-	GetIdentifier(userID string) (string, error)
-	SetName(oldUsername string, newUserName string) error
-	ChangeUsername(oldUsername string, newUserName string) error
-	ChangeProPic(username string, newPhoto string) error
-	Ping() error
-	CheckIdentifier(id string) bool
-	CheckUsername(username string) bool
-	CheckMessage(messageid string) bool
-	CheckChat(conversationid string, username string) bool
-	CreateUser(newUsername string) error
+	Insert(table string, values string) (sql.Result, error)
+	Update(table string, update string, condition string) (sql.Result, error)
+	Select(columns string, table string, conditions string) (*sql.Rows, error)
 }
 
 type appdbimpl struct {
@@ -69,14 +62,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 	// If not, the database is empty, and we need to create the structure
 	//if err.Error() != "sql: no rows in result set" {
 	if true {
-
 		file, err := os.ReadFile("./service/database/db_init.sql")
 		if err != nil {
 			return nil, fmt.Errorf("error opening the sql file for database creation")
 		}
 		requests := strings.Split(string(file), "\n")
 		for _, request := range requests {
-			fmt.Println(request)
+			//fmt.Println(request)
 			_, err := db.Exec(request)
 			if err != nil {
 				fmt.Println(err.Error())
@@ -86,6 +78,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	fmt.Println("Database creation: completed")
+
 	return &appdbimpl{
 		c: db,
 	}, nil

@@ -1,6 +1,6 @@
 package api
 
-import (
+/*import (
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -85,3 +85,4 @@ func checkMessageCorrectness(newMessage Message, rt *_router) bool {
 
 	return correctness
 }
+*/

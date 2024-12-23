@@ -1,6 +1,6 @@
 package api
 
-import (
+/*import (
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -56,3 +56,4 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(AcceptedResponse)
 }
+*/

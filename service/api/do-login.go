@@ -2,40 +2,61 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"regexp"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// getHelloWorld is an example of HTTP endpoint that returns "Hello world!" as a plain text
+// It logins an existing user.
 func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("content-type", "application/json")
-	var user Username
-	var id Access_token
+	var username Username
 
-	// Getting the username and validity check
-	err := json.NewDecoder(r.Body).Decode(&user)
-	err_constraints, _ := regexp.MatchString(`\w{3,16}`, user.Name)
-
-	if err != nil || !(err_constraints) {
+	// Getting the username
+	err := json.NewDecoder(r.Body).Decode(&username)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		forbiddenError := Response{
+		badRequest := Response{
 			Code:    400,
-			Message: "The username is not valid",
+			Message: "The received body is not a username",
 		}
-		json.NewEncoder(w).Encode(forbiddenError)
+		json.NewEncoder(w).Encode(badRequest)
 		return
 	}
 
-	// Identifier retrieval
-	id.Identifier, err = rt.db.GetIdentifier(user.Name)
-
+	// Id retrieval
+	users, err := UsernameRetrieval(username, rt)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(UnauthorizedError)
-	} else {
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(id)
+		fmt.Println(err.Error())
+		return
+	}
+
+	if len(users) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		notExisting := Response{
+			Code:    404,
+			Message: "No user corresponds to the given username",
+		}
+		json.NewEncoder(w).Encode(notExisting)
+		return
+	}
+
+	id := users[0]
+
+	// Writing the response in HTTP
+	w.WriteHeader(http.StatusCreated)
+	accessToken := Access_token{
+		Identifier: id,
+	}
+	err = json.NewEncoder(w).Encode(accessToken)
+	if err != nil {
+		encodingError := BackendError{
+			Affinity: "User creation",
+			Message:  "Encoding the new access token has failed",
+			OG_error: err,
+		}
+		fmt.Println(encodingError.Error())
+		return
 	}
 }

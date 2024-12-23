@@ -84,8 +84,24 @@ paths:
                 example:
                   code: 400
                   message: The username is not valid
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+            description: User not existing
+            content:
+              application/json:
+                schema:
+                  $ref : '#/components/schemas/Error'
+                example:
+                  code: 404
+                  message: No user corresponds to the given username
+        '500':
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                    $ref : '#/components/schemas/Error'
+                example:
+                  code: 500
+                  message: Internal server error
     put:
       tags: ["login"]
       security: []
@@ -153,6 +169,15 @@ paths:
                 example:
                   code: 403
                   message: The username is already in use
+        '500':
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                    $ref : '#/components/schemas/Error'
+                example:
+                  code: 500
+                  message: Internal server error
 
   /settings/username:
     put:
@@ -199,6 +224,15 @@ paths:
               example:
                 code: 403
                 message: The username tried out is already in use
+        '500':
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                    $ref : '#/components/schemas/Error'
+                example:
+                  code: 500
+                  message: Internal server error
   /settings/profilepicture:
     put:
       tags: ["user settings"]
@@ -221,6 +255,8 @@ paths:
             example: "0b00010010100"
         required: true
       responses:
+        '202':
+            description: Profile picture updated successfully
         '400':
             description: ProPic parsed incorrectly or not valid
             content:
@@ -232,8 +268,15 @@ paths:
                   message: The picture is not valid
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '202':
-          description: Profile picture updated successfully
+        '500':
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                    $ref : '#/components/schemas/Error'
+                example:
+                  code: 500
+                  message: Internal server error
   /conversations:
     get:
       tags: ["conversations"]
@@ -242,14 +285,23 @@ paths:
         It gets all the conversations (both private chats and groups) for the specified user.
       operationId: getMyConversations
       responses:
+        '200':
+            description: Conversations obtained successfully
+            content: 
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Conversations'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '200':
-          description: Conversations obtained successfully
-          content: 
+        '500':
+          description: Internal server error
+          content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Conversations'
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /groups:
     put:
       tags: ["groups"]
@@ -274,20 +326,20 @@ paths:
               group: 2050
         required: true
       responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '201':
-          description: A new group with that user has been created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Group'
         '200':
           description: User added successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '201':
+          description: A new group with that user has been created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
           description: Users can only be added in groups the adder takes part in
           content:
@@ -300,6 +352,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations/{conversationid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -310,8 +371,6 @@ paths:
         It retrieves a specific conversation (be it a private chat or a group for a specific user).
       operationId: getConversation
       responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '200':
           description: Conversation obtained successfully
           content: 
@@ -333,12 +392,23 @@ paths:
                     checkmarks: 1
                     comments: []
                     replyingto: 20
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Conversation not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
     post:
       tags: ["messaging"]
       summary: Send a message
@@ -376,6 +446,15 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/ConversationNotFound'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
     delete:
       tags: ["groups"]
       summary: Leave a group
@@ -383,10 +462,10 @@ paths:
        If the current conversation is a group, it leaves the group. Otherwise, it throws an error.
       operationId: leaveGroup
       responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Group left successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403': 
           description: The current conversation is not a group
           content:
@@ -395,6 +474,15 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404': 
           $ref: '#/components/responses/ConversationNotFound'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations/{conversationid}/settings/groupname:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -421,12 +509,21 @@ paths:
                 value: Family
         required: true
       responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '202':
           description: Name updated successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/ConversationNotFound'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations/{conversationid}/settings/grouphoto:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -455,12 +552,21 @@ paths:
                 value: Y2lhbw==
         required: true
       responses:
+        '202':
+            description: Group photo updated successfully
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '202':
-          description: Group photo updated successfully
         '404':
           $ref: '#/components/responses/ConversationNotFound'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations/{conversationid}/messages/{messageid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -479,20 +585,29 @@ paths:
               $ref: '#/components/schemas/Comment'
         required: true
       responses:
+        '201':
+            description: Comment added
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Comment'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '201':
-          description: Comment added
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
         '404':
           description: Conversation and/or message not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
     post:
         tags: ["messaging"]
         summary: Forward a message
@@ -511,12 +626,21 @@ paths:
                     $ref: '#/components/schemas/ConversationID'
           required: true
         responses:
+          '204':
+              description: Message forwarded
           '401':
             $ref: '#/components/responses/UnauthorizedError'
-          '204':
-            description: Message forwarded
           '404':
             $ref: '#/components/responses/ConversationNotFound'
+          '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
     delete:
       tags: ["messaging"]
       summary: Delete a message
@@ -524,10 +648,10 @@ paths:
         It deletes a sent message.
       operationId: deleteMessage
       responses:
+        '204':
+            description: Message deleted
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '204':
-          description: Message deleted
         '403':
           description: Message was not sent by the user
           content:
@@ -536,6 +660,15 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           $ref: '#/components/responses/ConversationNotFound'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations/{conversationid}/messages/{messageid}/comments/{commentid}:
     parameters:
       - $ref: '#/components/parameters/conversationid'
@@ -548,10 +681,10 @@ paths:
         It deletes a comment to a given message.
       operationId: uncommentMessage
       responses:
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '204':
           description: Comment deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
           description: Comment was not sent by the user
           content:
@@ -564,6 +697,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref : '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
     
 
 components:
