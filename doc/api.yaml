@@ -12,19 +12,19 @@ info:
     url: https://opensource.org/licenses/ECL-2.0
 
 servers:
-    - url: http://wasatext.com/v1
+  - url: http://wasatext.com/v1
 
 tags:
-    - name: conversations
-      description: Actions concerning groups or private chats
-    - name: groups
-      description: Actions concerning a given specific group
-    - name: login
-      description: Actions concerning login
-    - name: messaging
-      description: Actions concerning a specific message
-    - name: user settings
-      description: Actions concerning user settings
+  - name: conversations
+    description: Actions concerning groups or private chats
+  - name: groups
+    description: Actions concerning a given specific group
+  - name: login
+    description: Actions concerning login
+  - name: messaging
+    description: Actions concerning a specific message
+  - name: user settings
+    description: Actions concerning user settings
 
 paths:
   /session:
