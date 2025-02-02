@@ -24,7 +24,18 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 			Code:    400,
 			Message: "The received body is not a username",
 		}
-		json.NewEncoder(w).Encode(badRequest)
+		err = json.NewEncoder(w).Encode(badRequest)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "User creation",
+				Message:  "Request encoding for bad username has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return
+		}
 		return
 	}
 
@@ -46,7 +57,18 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 			Code:    400,
 			Message: "The username is not valid (it may be too short, or long, or containing not valid characters)",
 		}
-		json.NewEncoder(w).Encode(badUsername)
+		err = json.NewEncoder(w).Encode(badUsername)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "User creation",
+				Message:  "Request encoding for not regex-matching username has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return
+		}
 		return
 	}
 
@@ -63,7 +85,18 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 			Code:    403,
 			Message: "The username tried out is already in use",
 		}
-		json.NewEncoder(w).Encode(forbiddenError)
+		err = json.NewEncoder(w).Encode(forbiddenError)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "User creation",
+				Message:  "Request encoding for username already in use has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return
+		}
 		return
 	}
 

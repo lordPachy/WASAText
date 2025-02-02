@@ -18,9 +18,10 @@ func (e *BackendError) Error() string {
 	if e.OG_error != nil {
 		val += "Original error: " + e.OG_error.Error() + "\n"
 	}
-
+	/* What was this?
 	if e.ResponseWriter != nil {
 
 	}
+	*/
 	return val + ast
 }

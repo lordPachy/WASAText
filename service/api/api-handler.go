@@ -12,7 +12,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/tests/database", rt.testDatabase)
 
 	// Settings methods
-	//	rt.router.PUT("/settings/username", rt.setMyUserName)
+	rt.router.PUT("/settings/username", rt.setMyUserName)
 	//	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
 
 	// Conversation methods

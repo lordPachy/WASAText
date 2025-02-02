@@ -30,7 +30,18 @@ func Authentication(w http.ResponseWriter, r *http.Request, rt *_router) (Access
 			Message:  "User not found for authentication",
 			OG_error: nil,
 		}
-		json.NewEncoder(w).Encode(unauthorizedError)
+		err = json.NewEncoder(w).Encode(unauthorizedError)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "Authentication",
+				Message:  "Request encoding for unauthorized error has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return token, &notFoundError
+		}
 		return token, &notFoundError
 	}
 	return token, nil

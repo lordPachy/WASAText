@@ -21,7 +21,18 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 			Code:    400,
 			Message: "The received body is not a username",
 		}
-		json.NewEncoder(w).Encode(badRequest)
+		err = json.NewEncoder(w).Encode(badRequest)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "Login",
+				Message:  "Request encoding for username not correctly formatted response has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return
+		}
 		return
 	}
 
@@ -38,7 +49,18 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 			Code:    404,
 			Message: "No user corresponds to the given username",
 		}
-		json.NewEncoder(w).Encode(notExisting)
+		err = json.NewEncoder(w).Encode(notExisting)
+
+		// Checking that the bad request encoding has gone through successfully
+		if err != nil {
+			encodingError := BackendError{
+				Affinity: "Login",
+				Message:  "Request encoding for user not found in database response has failed",
+				OG_error: err,
+			}
+			fmt.Println(encodingError.Error())
+			return
+		}
 		return
 	}
 
