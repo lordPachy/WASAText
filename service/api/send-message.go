@@ -494,3 +494,7 @@ func PrivchatsRowReading(res *sql.Rows) ([]string, error) {
 
 	return answer, nil
 }
+
+func newPrivConversation(id1 Access_token, id2 Access_token, rt *Router) {
+
+}
