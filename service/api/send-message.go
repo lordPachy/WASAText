@@ -132,7 +132,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	timestamp := GetTime()
 
 	// Getting the username
-	user, err := IdRetrieval(token, rt)
+	user, err := IdRetrieval(token, rt, w)
 	if err != nil {
 		usernameError := BackendError{
 			Affinity: affinity,

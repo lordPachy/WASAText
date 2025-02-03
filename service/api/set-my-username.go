@@ -13,10 +13,13 @@ import (
 func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("content-type", "application/json")
 
+	// Logging information
+	affinity := "Username setting"
+
 	// Authentication
 	token, err := Authentication(w, r, rt)
 	if err != nil {
-		fmt.Println(err.Error())
+		return
 	}
 
 	// Getting the new username
@@ -32,12 +35,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 
 		// Checking that the bad request encoding has gone through successfully
 		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Username setting",
-				Message:  "Request encoding for badly formatted username has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
+			_ = createBackendError(affinity, "Request encoding for badly formatted username has failed", err, w)
 			return
 		}
 		return
@@ -47,14 +45,10 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	match, err := regexp.MatchString(`^\w{3,16}$`, newUsername.Name)
 
 	if err != nil {
-		regexError := BackendError{
-			Affinity: "User creation",
-			Message:  "The string matching mechanism for id creation has failed",
-			OG_error: err,
-		}
-		fmt.Println(regexError.Error())
+		_ = createBackendError(affinity, "The string matching mechanism for id creation has failed", err, w)
 		return
 	}
+
 	if !match {
 		w.WriteHeader(http.StatusBadRequest)
 		badUsername := Response{
@@ -65,12 +59,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 
 		// Checking that the bad request encoding has gone through successfully
 		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Username setting",
-				Message:  "Request encoding for username not matching with regex response has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
+			_ = createBackendError(affinity, "Request encoding for username not matching with regex response has failed", err, w)
 			return
 		}
 		return
@@ -79,12 +68,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	// Uniqueness check
 	other_users, err := UsernameRetrieval(newUsername, rt)
 	if err != nil {
-		retrievalError := BackendError{
-			Affinity: "User creation",
-			Message:  "New username retrieving for uniqueness check has failed",
-			OG_error: err,
-		}
-		fmt.Println(retrievalError.Error())
+		_ = createBackendError(affinity, "New username retrieving for uniqueness check has failed", err, w)
 		return
 	}
 
@@ -98,26 +82,17 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 
 		// Checking that the bad request encoding has gone through successfully
 		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Username setting",
-				Message:  "Request encoding for username already in user request has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
+			_ = createBackendError(affinity, "Request encoding for username already in user request has failed", err, w)
 			return
 		}
+
 		return
 	}
 
 	// Actually setting the username in the DB
 	_, err = rt.db.Update("users", fmt.Sprintf("username = '%s'", newUsername.Name), fmt.Sprintf("id = '%s'", token.Identifier))
 	if err != nil {
-		usernameUpdateError := BackendError{
-			Affinity: "User creation",
-			Message:  "Updating user with the new id has failed",
-			OG_error: err,
-		}
-		fmt.Println(usernameUpdateError.Error())
+		_ = createBackendError(affinity, "Updating user with the new id has failed", err, w)
 		return
 	}
 
