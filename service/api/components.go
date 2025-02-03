@@ -29,7 +29,27 @@ type Comment struct {
 	SentByMe  bool   `json:"sentbyme"`
 }
 
+// Message sent with HTTP request
+type RequestMessage struct {
+	Content    string `json:"content"`
+	Photo      string `json:"string"`
+	ReplyingTo int    `json:"replyingto"`
+}
+
+// Message held in the database
 type Message struct {
+	MessageID  int       `json:"messageid"`
+	Timestamp  string    `json:"timestamp"`
+	Content    string    `json:"content"`
+	Photo      string    `json:"string"`
+	Username   string    `json:"username"`
+	Checkmarks int       `json:"checkmarks"`
+	Comments   []Comment `json:"comments"`
+	ReplyingTo int       `json:"replyingto"`
+}
+
+// Message wrapped in HTTP response
+type ResponseMessage struct {
 	MessageID  int       `json:"messageid"`
 	Timestamp  string    `json:"timestamp"`
 	Content    string    `json:"content"`

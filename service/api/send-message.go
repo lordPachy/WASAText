@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
-	"strconv"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -26,7 +26,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Getting the new message
-	var newMessage Message
+	var newMessage RequestMessage
 	err = json.NewDecoder(r.Body).Decode(&newMessage)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -49,22 +49,8 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	// Creating the id
-	id, err := MessageIdCreator(rt)
-	if err != nil {
-		idError := BackendError{
-			Affinity: affinity,
-			Message:  "Creating the message ID has failed",
-			OG_error: err,
-		}
-		fmt.Println(idError.Error())
-	}
-
-	newMessage.MessageID = id
-
 	// Checking if the message is valid
 	match, err := checkMessageCorrectness(newMessage, rt)
-
 	if err != nil {
 		formatError := BackendError{
 			Affinity: affinity,
@@ -74,6 +60,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		fmt.Println(formatError.Error())
 		return
 	}
+
 	if !match {
 		w.WriteHeader(http.StatusBadRequest)
 		badPic := Response{
@@ -86,7 +73,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		if err != nil {
 			encodingError := BackendError{
 				Affinity: affinity,
-				Message:  "Request encoding for username not matching with regex response has failed",
+				Message:  "Request encoding for message not correcly formatted response has failed",
 				OG_error: err,
 			}
 			fmt.Println(encodingError.Error())
@@ -95,22 +82,48 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	// Actually setting the picture in the DB
-	_, err = rt.db.Update("users", fmt.Sprintf("propic = '%s'", newPhoto.Image), fmt.Sprintf("id = '%s'", token.Identifier))
+	// Creating the id
+	id, err := MessageIdCreator(rt)
 	if err != nil {
-		propicUpdateError := BackendError{
+		idError := BackendError{
 			Affinity: affinity,
-			Message:  "Updating user with the new profile picture has failed",
+			Message:  "Creating the message ID has failed",
 			OG_error: err,
 		}
-		fmt.Println(propicUpdateError.Error())
+		fmt.Println(idError.Error())
 		return
+	}
+
+	// Getting the timestamp
+	timestamp := GetTime()
+
+	// Getting the username
+	user, err := UsernameFromID(token.Identifier, rt)
+	if err != nil {
+		usernameError := BackendError{
+			Affinity: affinity,
+			Message:  "Retrieving the username has failed",
+			OG_error: err,
+		}
+		fmt.Println(usernameError.Error())
+		return
+	}
+
+	// Actually writing the message in the DB
+	_, err = rt.db.Insert("messages", fmt.Sprintf("('%d', '%s', '%s', '%s', '%s', '%d', '%d')", id, user.Name, timestamp, newMessage.Content, newMessage.Photo, 0, newMessage.ReplyingTo))
+	if err != nil {
+		insertionError := BackendError{
+			Affinity: "Message sending",
+			Message:  "Inserting the new message into the database has failed",
+			OG_error: err,
+		}
+		fmt.Println(insertionError.Error())
 	}
 
 	// Writing the response in HTTP
 	// Accepted request
 	w.Header().Set("content-type", "text-plain")
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // package api
@@ -178,35 +191,54 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	w.WriteHeader(http.StatusNoContent)
 }
 */
-// A function that checks the correctness of every field in a sent message
-func checkMessageCorrectness(newMessage Message, rt *_router) (bool, error) {
-	id := newMessage.MessageID >= 0 && newMessage.MessageID <= 10000
-	timestamp1, err := regexp.MatchString(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z`, newMessage.Timestamp)
-	if err != nil {
-		return false, err
-	}
 
-	timestamp2 := len(newMessage.Timestamp) == 20
-	no_content := !(len(newMessage.Content) == 0 && len(newMessage.Photo) == 0)
+// A function that checks the correctness of every field in a sent message
+func checkMessageCorrectness(newMessage RequestMessage, rt *_router) (bool, error) {
 	var message_validity bool = false
+	var replying_to bool
+	var err error
+
+	// Checking that text is valid
 	if len(newMessage.Content) > 0 {
 		message_validity, err = regexp.MatchString(`.{1,300}`, newMessage.Content)
 		if err != nil {
 			return false, err
 		}
-	} else if len(newMessage.Photo) > 0 {
+
+		if !message_validity {
+			return false, nil
+		}
+	}
+
+	// Checking that photo is valid
+	if len(newMessage.Photo) > 0 {
 		message_validity, err = regexp.MatchString(`[-A-Za-z0-9+/=]|=[^=]|={3,16}`, newMessage.Photo)
 		if err != nil {
 			return false, err
 		}
-	}
-	user := rt.db.CheckUsername(newMessage.Username)
-	checkmarks := newMessage.Checkmarks == 0
-	comments := len(newMessage.Comments) == 0
-	sentbyme := newMessage.SentByMe
-	replyingto := rt.db.CheckMessage(strconv.Itoa(newMessage.MessageID))
 
-	correctness := id && timestamp1 && timestamp2 && no_content && message_validity && user && checkmarks && comments && sentbyme && replyingto
+		if !message_validity {
+			return false, nil
+		}
+	}
+
+	// Replying to a message with id -1 corresponds to
+	// responding to no one, since messages' id go up from 0
+	if newMessage.ReplyingTo == -1 {
+		replying_to = true
+	} else {
+		replying_to, err = MessageExists(newMessage.ReplyingTo, rt)
+		if err != nil {
+			replyingError := BackendError{
+				Affinity: "Message sending",
+				Message:  "Checking that the message we are replying to's id failed",
+				OG_error: err,
+			}
+			return false, &replyingError
+		}
+	}
+
+	correctness := replying_to && message_validity
 
 	return correctness, nil
 }
@@ -285,4 +317,71 @@ func MessageRowReading(res *sql.Rows) ([]string, error) {
 	}
 
 	return answer, nil
+}
+
+func MessageExists(id int, rt *_router) (bool, error) {
+	// Querying database rows
+	rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
+	if err != nil {
+		selectionError := BackendError{
+			Affinity: "Message sending",
+			Message:  "SELECT in the database seeking messages with the same id failed",
+			OG_error: err,
+		}
+		fmt.Println(selectionError.Error())
+		return false, &selectionError
+	}
+
+	// Checking the queried rows
+	other_messages, err := MessageRowReading(rows)
+
+	if err != nil {
+		idError := BackendError{
+			Affinity: "Message sending",
+			Message:  "Reading the database rows that were seeking messages with the same id failed",
+			OG_error: err,
+		}
+		return false, &idError
+	} else if len(other_messages) == 0 {
+		return false, nil
+	}
+
+	if len(other_messages) > 1 {
+		idUniquenessError := BackendError{
+			Affinity: "Message sending",
+			Message:  "The database contains more than 1 message with the same id",
+			OG_error: err,
+		}
+		return false, &idUniquenessError
+	}
+
+	return true, nil
+}
+
+func GetTime() string {
+	currentTime := time.Now()
+	return currentTime.Format("2017-07-21T17:32:28Z")
+}
+
+func UsernameFromID(id string, rt *_router) (*Username, error) {
+	// Querying database rows
+	rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id))
+	if err != nil {
+		return nil, err
+	}
+
+	// Checking the queried rows
+	usernames, err := UsersRowReading(rows)
+
+	if err != nil {
+		return nil, err
+	} else if len(usernames) == 0 {
+		return nil, nil
+	}
+
+	username := Username{
+		Name: usernames[0],
+	}
+
+	return &username, nil
 }

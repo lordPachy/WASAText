@@ -18,7 +18,7 @@ func (rt *_router) Handler() http.Handler {
 	// Conversation methods
 	rt.router.GET("/conversations", rt.getMyConversations)
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)
-	//	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
+	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
 	// 	rt.router.boh("/conversations/:conversationid", rt.addToGroup)
 	rt.router.DELETE("/conversations/:conversationid", rt.leaveGroup)
 
