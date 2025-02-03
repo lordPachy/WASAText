@@ -13,13 +13,13 @@ func (rt *_router) Handler() http.Handler {
 
 	// Settings methods
 	rt.router.PUT("/settings/username", rt.setMyUserName)
-	//	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
+	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
 
 	// Conversation methods
 	rt.router.GET("/conversations", rt.getMyConversations)
-
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)
 	//	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
+	// 	rt.router.boh("/conversations/:conversationid", rt.addToGroup)
 	rt.router.DELETE("/conversations/:conversationid", rt.leaveGroup)
 
 	rt.router.PUT("/conversations/:conversationid/settings/groupname", rt.setGroupName)

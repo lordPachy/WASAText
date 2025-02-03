@@ -102,10 +102,14 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 
 	// Accepted request
 	// Creating the id
-	id, err := IdCreator(rt)
+	id, err := userIdCreator(rt)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		idError := BackendError{
+			Affinity: "User creation",
+			Message:  "Creating the user ID has failed",
+			OG_error: err,
+		}
+		fmt.Println(idError.Error())
 	}
 
 	// Inserting the user into the database
@@ -164,7 +168,7 @@ func UsernameRetrieval(username Username, rt *_router) ([]string, error) {
 	return other_users, nil
 }
 
-func IdCreator(rt *_router) (string, error) {
+func userIdCreator(rt *_router) (string, error) {
 	var id string
 
 	for {

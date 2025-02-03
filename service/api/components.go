@@ -4,6 +4,10 @@ type Username struct {
 	Name string `json:"name"`
 }
 
+type Image struct {
+	Image string `json:"image"`
+}
+
 type Response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

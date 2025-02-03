@@ -444,8 +444,6 @@ paths:
                   message: The message has one or more non-valid field(s)
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/ConversationNotFound'
         '500':
           description: Internal server error
           content:
@@ -543,13 +541,14 @@ paths:
               properties:
                 value:
                   type: string
-                  description: A photo file in Base64 encoding.
-                  pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,}$
+                  description: photo
+                  format: binary
+                  pattern: ^0b[01]{1,14}$
                   minLength: 3
                   maxLength: 16
-                  format: byte
+                  example: "0b00010010100"
               example:
-                value: Y2lhbw==
+                value: "0b00010010100"
         required: true
       responses:
         '202':
@@ -912,11 +911,11 @@ components:
         groupphoto:
           type: string
           description: Photo of the group
-          pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,}$
+          format: binary
+          pattern: ^0b[01]{1,14}$
           minLength: 3
           maxLength: 16
-          format: byte
-          example: Y2lhbw==
+          example: "0b00010010100"
       example:
         conversationid: 10
         members:
@@ -933,7 +932,7 @@ components:
             comments: []
             replyingto: 20
         groupname: Family
-        groupphoto: Y2lhbw==
+        groupphoto: "0b00010010100"
 
     Message:
       title: Message
@@ -961,12 +960,12 @@ components:
           example: Hello
         photo:
           type: string
-          description: A photo file in Base64 encoding.
-          pattern: ^[-A-Za-z0-9+/=]|=[^=]|={3,16}$
+          description: Photo of the message
+          format: binary
+          pattern: ^0b[01]{1,14}$
           minLength: 3
           maxLength: 16
-          format: byte
-          example: Y2lhbw==
+          example: "0b00010010100"
         username:
           $ref: '#/components/schemas/Username'     # sender's username
         checkmarks:
