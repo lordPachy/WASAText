@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -19,10 +20,43 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	// Setting logging information
 	affinity := "Message sending"
 
+	// Checking that the conversation actually exists
+	convID, err := strconv.Atoi(ps.ByName("conversationid"))
+	if err != nil {
+		retrievalError := BackendError{
+			Affinity: affinity,
+			Message:  "Conversation retrieval has failed",
+			OG_error: err,
+		}
+		fmt.Println(retrievalError.Error())
+		return
+	}
+
+	convs, err := ConversationRetrieval(convID, rt)
+	if err != nil {
+		retrievalError := BackendError{
+			Affinity: affinity,
+			Message:  "Conversation retrieval checking has failed",
+			OG_error: err,
+		}
+		fmt.Println(retrievalError.Error())
+		return
+	}
+
+	if len(convs) == 0 {
+
+	}
+
 	// Authentication
 	token, err := Authentication(w, r, rt)
 	if err != nil {
-		fmt.Println(err.Error())
+		authError := BackendError{
+			Affinity: affinity,
+			Message:  "Authentication has failed",
+			OG_error: err,
+		}
+		fmt.Println(authError.Error())
+		return
 	}
 
 	// Getting the new message
@@ -98,7 +132,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	timestamp := GetTime()
 
 	// Getting the username
-	user, err := UsernameFromID(token.Identifier, rt)
+	user, err := IdRetrieval(token, rt)
 	if err != nil {
 		usernameError := BackendError{
 			Affinity: affinity,
@@ -109,8 +143,16 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
+	// Getting the message id of who we are replying to
+	replyingTo := fmt.Sprintf("'%s'", strconv.Itoa(newMessage.ReplyingTo))
+	if replyingTo == "'-1'" {
+		replyingTo = "NULL"
+	}
+
 	// Actually writing the message in the DB
-	_, err = rt.db.Insert("messages", fmt.Sprintf("('%d', '%s', '%s', '%s', '%s', '%d', '%d')", id, user.Name, timestamp, newMessage.Content, newMessage.Photo, 0, newMessage.ReplyingTo))
+	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s)", id, user[1], timestamp, newMessage.Content, newMessage.Photo, 0, replyingTo)
+
+	_, err = rt.db.Insert("messages", query)
 	if err != nil {
 		insertionError := BackendError{
 			Affinity: "Message sending",
@@ -118,6 +160,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 			OG_error: err,
 		}
 		fmt.Println(insertionError.Error())
+		return
 	}
 
 	// Writing the response in HTTP
@@ -125,72 +168,6 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	w.Header().Set("content-type", "text-plain")
 	w.WriteHeader(http.StatusNoContent)
 }
-
-// package api
-
-/*import (
-	"encoding/json"
-	"net/http"
-	"regexp"
-	"strconv"
-
-	"github.com/julienschmidt/httprouter"
-)
-
-// It sends a message to a specified chat.
-// Implementation notes:
-// 1. Creating the message
-// 2. Adding to the message database
-// 3. Adding to the chat database
-func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// Authentication
-	id, err := rt.authorization(w, r)
-	if err != nil {
-		w.Header().Set("content-type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(UnauthorizedError)
-		return
-	}
-
-	// Checking whether the conversation exists
-	convo := ps.ByName("conversationid")
-	convo_check := rt.db.CheckChat(convo, id)
-
-	if !convo_check {
-		w.Header().Set("content-type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		notFoundError := Response{
-			Code:    404,
-			Message: "Conversation not found",
-		}
-		json.NewEncoder(w).Encode(notFoundError)
-		return
-	}
-
-	// Reading the message
-	var newMessage Message
-	err = json.NewDecoder(r.Body).Decode(&newMessage)
-
-	// Verifying the correctness of each and every field
-	err_constraints := checkMessageCorrectness(newMessage, rt)
-	if err != nil || !(err_constraints) {
-		w.Header().Set("content-type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		forbiddenError := Response{
-			Code:    400,
-			Message: "The message has one or more non-valid field(s)",
-		}
-		json.NewEncoder(w).Encode(forbiddenError)
-		return
-	}
-
-	// Uploading the message
-
-	// Sending the response
-	w.Header().Set("content-type", "text/plain")
-	w.WriteHeader(http.StatusNoContent)
-}
-*/
 
 // A function that checks the correctness of every field in a sent message
 func checkMessageCorrectness(newMessage RequestMessage, rt *_router) (bool, error) {
@@ -360,7 +337,14 @@ func MessageExists(id int, rt *_router) (bool, error) {
 
 func GetTime() string {
 	currentTime := time.Now()
-	return currentTime.Format("2017-07-21T17:32:28Z")
+	datetime := fmt.Sprintf("%d-%d-%dT%d:%d:%dZ",
+		currentTime.Year(),
+		currentTime.Month(),
+		currentTime.Day(),
+		currentTime.Hour(),
+		currentTime.Minute(),
+		currentTime.Second())
+	return datetime
 }
 
 func UsernameFromID(id string, rt *_router) (*Username, error) {
@@ -380,8 +364,133 @@ func UsernameFromID(id string, rt *_router) (*Username, error) {
 	}
 
 	username := Username{
-		Name: usernames[0],
+		Name: usernames[1],
 	}
 
 	return &username, nil
+}
+
+func ConversationRetrieval(id int, rt *_router) ([]string, error) {
+	// Checking that if it is a private conversation
+	// SQL query
+	rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("id = '%d'", id))
+	if err != nil {
+		selectionError := BackendError{
+			Affinity: "Conversation retrieval",
+			Message:  "SELECT in the database seeking conversations with the same id failed",
+			OG_error: err,
+		}
+		return nil, &selectionError
+	}
+
+	// Reading the rows
+	chats, err := PrivchatsRowReading(rows)
+
+	if err != nil {
+		retrievalError := BackendError{
+			Affinity: "Conversation retrieval",
+			Message:  "Reading the database rows that were seeking conversations with the same id failed",
+			OG_error: err,
+		}
+		fmt.Println(retrievalError.Error())
+		return nil, &retrievalError
+	}
+
+	if len(chats) > 0 {
+		return chats, nil
+	}
+
+	// It is not a private conversation:
+	// Checking if it is a groupchat conversation
+	// SQL query
+	rows, err = rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", id))
+	if err != nil {
+		selectionError := BackendError{
+			Affinity: "Conversation retrieval",
+			Message:  "SELECT in the database seeking conversations with the same id failed",
+			OG_error: err,
+		}
+		return nil, &selectionError
+	}
+
+	// Reading the rows
+	chats, err = GroupmembersRowReading(rows)
+
+	if err != nil {
+		retrievalError := BackendError{
+			Affinity: "Conversation retrieval",
+			Message:  "Reading the database rows that were seeking conversations with the same id failed",
+			OG_error: err,
+		}
+		fmt.Println(retrievalError.Error())
+		return nil, &retrievalError
+	}
+
+	return chats, nil
+}
+
+// A function for retrieving rows from the groupchats table
+func GroupmembersRowReading(res *sql.Rows) ([]string, error) {
+	// Retrieving the values from rows
+	var answer []string // array of actual values
+	var id, member *string
+	for {
+		if res.Next() { // there is another value to be scanned
+			err := res.Scan(&id, &member)
+			if err == nil {
+				answer = append(answer, *id, *member)
+			} else {
+				return nil, err // the scan has had an error
+			}
+		} else {
+			if res.Err() == nil { // there are no more values to scan in the current set
+				if res.NextResultSet() { // there are values to be scanned
+					continue // in the next set
+				} else {
+					if res.Err() == nil { // there are no more values, and the scan can end
+						break
+					} else { // next set scan went unsuccessfully
+						return nil, res.Err()
+					}
+				}
+			} else { // next scan went unsuccessfully
+				return nil, res.Err()
+			}
+		}
+	}
+
+	return answer, nil
+}
+
+// A function for retrieving rows from the privchats table
+func PrivchatsRowReading(res *sql.Rows) ([]string, error) {
+	// Retrieving the values from rows
+	var answer []string // array of actual values
+	var id, member1, member2 *string
+	for {
+		if res.Next() { // there is another value to be scanned
+			err := res.Scan(&id, &member1, &member2)
+			if err == nil {
+				answer = append(answer, *id, *member1, *member2)
+			} else {
+				return nil, err // the scan has had an error
+			}
+		} else {
+			if res.Err() == nil { // there are no more values to scan in the current set
+				if res.NextResultSet() { // there are values to be scanned
+					continue // in the next set
+				} else {
+					if res.Err() == nil { // there are no more values, and the scan can end
+						break
+					} else { // next set scan went unsuccessfully
+						return nil, res.Err()
+					}
+				}
+			} else { // next scan went unsuccessfully
+				return nil, res.Err()
+			}
+		}
+	}
+
+	return answer, nil
 }

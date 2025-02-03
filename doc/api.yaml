@@ -67,14 +67,14 @@ paths:
                     identifier:
                       type: string
                       description: access token
-                      pattern: ^[\w-$!&/(),.]{4,16}$
-                      minLength: 4
+                      pattern: ^\w{16}$
+                      minLength: 16
                       maxLength: 16
-                      example: "abcdef012345"
+                      example: "abcdabcdabcdabcd"
                   example:
                     UserToken:
                       properties:
-                        identifier: alsdfkgnj34902857
+                        identifier: abcdabcdabcdabcd
         '400':
             description: Username parsed incorrectly or not valid
             content:
@@ -143,14 +143,14 @@ paths:
                     identifier:
                       type: string
                       description: access token
-                      pattern: ^[\w-$!&/(),.]{4,16}$
-                      minLength: 4
+                      pattern: ^\w{16}$
+                      minLength: 16
                       maxLength: 16
-                      example: "abcdef012345"
+                      example: "abcdabcdabcdabcd"
                   example:
                     UserToken:
                       properties:
-                        identifier: alsdfkgnj34902857
+                        identifier: abcdabcdabcdabcd
         '400':
             description: Username parsed incorrectly or not valid
             content:

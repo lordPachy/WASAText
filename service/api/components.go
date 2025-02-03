@@ -32,7 +32,7 @@ type Comment struct {
 // Message sent with HTTP request
 type RequestMessage struct {
 	Content    string `json:"content"`
-	Photo      string `json:"string"`
+	Photo      string `json:"photo"`
 	ReplyingTo int    `json:"replyingto"`
 }
 
@@ -45,18 +45,5 @@ type Message struct {
 	Username   string    `json:"username"`
 	Checkmarks int       `json:"checkmarks"`
 	Comments   []Comment `json:"comments"`
-	ReplyingTo int       `json:"replyingto"`
-}
-
-// Message wrapped in HTTP response
-type ResponseMessage struct {
-	MessageID  int       `json:"messageid"`
-	Timestamp  string    `json:"timestamp"`
-	Content    string    `json:"content"`
-	Photo      string    `json:"string"`
-	Username   string    `json:"username"`
-	Checkmarks int       `json:"checkmarks"`
-	Comments   []Comment `json:"comments"`
-	SentByMe   bool      `json:"sentbyme"`
 	ReplyingTo int       `json:"replyingto"`
 }

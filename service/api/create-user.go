@@ -172,7 +172,7 @@ func userIdCreator(rt *_router) (string, error) {
 	var id string
 
 	for {
-		id, _ = reggen.Generate("^[0-9A-Za-z-$&/(),.]{4,16}$", 16)
+		id, _ = reggen.Generate("^[A-Za-z]{16}$", 16)
 		rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id))
 		if err != nil {
 			selectionError := BackendError{
