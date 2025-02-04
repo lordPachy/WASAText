@@ -1,0 +1,190 @@
+package api
+
+import (
+	"fmt"
+	"net/http"
+)
+
+/*
+This package contains function that get never called directly
+but always through other functions. Thus, they get to create
+their own errors, and manage the writer.
+*/
+
+// It retrieves an array of strings (that should represent a single user) from id.
+func UserFromIdRetrieval(id Access_token, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "User retrieval from id"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id.Identifier))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w)
+	}
+
+	// Reading the rows
+	users, err := UsersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w)
+	}
+
+	return users, nil
+}
+
+// It retrieves an array of strings (that should represent a single user) from id.
+func UserFromUsernameRetrieval(username Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "User retrieval from username"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "users", fmt.Sprintf("username = '%s'", username.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same username failed", err, w)
+	}
+
+	// Reading the rows
+	other_users, err := UsersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same username failed", err, w)
+	}
+
+	return other_users, nil
+}
+
+// It check the existence of a user.
+func UserFromUsernameExists(username Username, rt *_router, w http.ResponseWriter) (bool, error) {
+	user, err := UserFromUsernameRetrieval(username, rt, w)
+	if err != nil {
+		return false, err
+	}
+
+	if len(user) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// It checks for the existence of a message.
+func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, error) {
+	// Logging information
+	const affinity string = "Message existence checking"
+
+	// Querying database rows
+	rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
+	if err != nil {
+		return false, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w)
+	}
+
+	// Checking the queried rows
+	other_messages, err := MessageRowReading(rows)
+
+	if err != nil {
+		return false, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w)
+	} else if len(other_messages) == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// It retrieves a conversation from the database.
+func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Single conversation retrieval"
+
+	// Checking that if it is a private conversation
+	if id < 5000 {
+		// SQL query
+		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("id = '%d'", id))
+		if err != nil {
+			return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w)
+		}
+
+		// Reading the rows
+		chats, err := PrivchatsRowReading(rows)
+
+		if err != nil {
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w)
+		}
+
+		if len(chats) > 0 {
+			return chats, nil
+		}
+	}
+
+	// It is not a private conversation:
+	// Checking if it is a groupchat conversation
+	// SQL query
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", id))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w)
+	}
+
+	// Reading the rows
+	chats, err := GroupmembersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w)
+	}
+
+	return chats, nil
+}
+
+// It check the existence of a private chat.
+func PrivConversationFromMembersExistence(user1 Username, user2 Username, rt *_router, w http.ResponseWriter) (bool, error) {
+	user, err := PrivConversationFromMembersRetrieval(user1, user2, rt, w)
+	if err != nil {
+		return false, err
+	}
+
+	if len(user) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// It retrieves a private conversation from the database, given the two members.
+func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Private conversation retrieval, from members"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' AND member2 = '%s'", user1.Name, user2.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w)
+	}
+
+	// Reading the rows
+	chats, err := PrivchatsRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w)
+	}
+
+	// They might be in the other order around
+	if len(chats) == 0 {
+		// SQL query
+		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' AND member2 = '%s'", user2.Name, user1.Name))
+		if err != nil {
+			return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w)
+		}
+
+		// Reading the rows
+		chats, err = PrivchatsRowReading(rows)
+
+		if err != nil {
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w)
+		}
+
+	}
+
+	return chats, nil
+}
+
+func newPrivConversation(id1 Access_token, id2 Access_token, rt *Router) {
+
+}

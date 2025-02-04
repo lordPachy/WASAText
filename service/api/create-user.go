@@ -40,7 +40,7 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Uniqueness check
-	other_users, err := UsernameRetrieval(newUsername, rt)
+	other_users, err := UserFromUsernameRetrieval(newUsername, rt, w)
 	if err != nil {
 		return
 	}
@@ -52,25 +52,16 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 
 	// Accepted request
 	// Creating the id
-	id, err := userIdCreator(rt)
+	id, err := userIdCreator(rt, w)
 	if err != nil {
-		idError := BackendError{
-			Affinity: "User creation",
-			Message:  "Creating the user ID has failed",
-			OG_error: err,
-		}
-		fmt.Println(idError.Error())
+		return
 	}
 
 	// Inserting the user into the database
 	_, err = rt.db.Insert("users", fmt.Sprintf("('%s', '%s', Null)", id, newUsername.Name))
 	if err != nil {
-		insertionError := BackendError{
-			Affinity: "User creation",
-			Message:  "Inserting the new user into the database has failed",
-			OG_error: err,
-		}
-		fmt.Println(insertionError.Error())
+		_ = createBackendError(affinity, "Inserting the new user into the database has failed", err, w)
+		return
 	}
 
 	// Writing the response in HTTP
@@ -80,42 +71,30 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	err = json.NewEncoder(w).Encode(newToken)
 	if err != nil {
-		encodingError := BackendError{
-			Affinity: "User creation",
-			Message:  "Encoding the new access token has failed",
-			OG_error: err,
-		}
-		fmt.Println(encodingError.Error())
+		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w)
 		return
 	}
 }
 
-func userIdCreator(rt *_router) (string, error) {
+// It creates a userID and returns it a string; otherwise, automatically handles the error
+func userIdCreator(rt *_router, w http.ResponseWriter) (string, error) {
 	var id string
+
+	// Logging information
+	affinity := "User creation"
 
 	for {
 		id, _ = reggen.Generate("^[A-Za-z]{16}$", 16)
 		rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id))
 		if err != nil {
-			selectionError := BackendError{
-				Affinity: "User creation",
-				Message:  "SELECT in the database seeking users with the same id failed",
-				OG_error: err,
-			}
-			fmt.Println(selectionError.Error())
-			return "", &selectionError
+			return "", createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w)
 		}
 
 		// Checking that the new id is unique
 		other_users, err := UsersRowReading(rows)
 
 		if err != nil {
-			idUniquenessError := BackendError{
-				Affinity: "User creation",
-				Message:  "Reading the database rows that were seeking users with the same id failed",
-				OG_error: err,
-			}
-			return "", &idUniquenessError
+			return "", createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w)
 		} else if len(other_users) == 0 {
 			break
 		}

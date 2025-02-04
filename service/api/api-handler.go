@@ -17,6 +17,7 @@ func (rt *_router) Handler() http.Handler {
 
 	// Conversation methods
 	rt.router.GET("/conversations", rt.getMyConversations)
+	rt.router.PUT("/conversations", rt.createConversation)
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)
 	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
 	// 	rt.router.boh("/conversations/:conversationid", rt.addToGroup)

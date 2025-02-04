@@ -1,10 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-	"net/http"
-)
-
 type Username struct {
 	Name string `json:"name"`
 }
@@ -13,25 +8,19 @@ type Image struct {
 	Image string `json:"image"`
 }
 
+type ConversationRequest struct {
+	IsGroup   bool       `json:"isgroup"`
+	Members   []Username `json:"members"`
+	GroupName string     `json:"groupname"`
+}
+
+type ConversationID struct {
+	Id int `json:"id"`
+}
+
 type Response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-}
-
-// Creates an error message and recovers if another error is produced
-func createFaultyResponse(code int, message string, affinity string, failmessage string, w http.ResponseWriter) {
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(code)
-	error := Response{
-		Code:    code,
-		Message: message,
-	}
-	err := json.NewEncoder(w).Encode(error)
-
-	// Checking that the bad request encoding has gone through successfully
-	if err != nil {
-		_ = createBackendError(affinity, failmessage, err, w)
-	}
 }
 
 type User struct {

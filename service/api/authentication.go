@@ -19,7 +19,7 @@ func Authentication(w http.ResponseWriter, r *http.Request, rt *_router) (Access
 		Identifier: id,
 	}
 
-	user, err := IdRetrieval(token, rt, w)
+	user, err := UserFromIdRetrieval(token, rt, w)
 	if err != nil {
 		return token, err
 	}

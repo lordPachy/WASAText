@@ -45,3 +45,19 @@ func createBackendError(affinity string, message string, og_error error, respons
 	fmt.Println(backenderror.Error())
 	return &backenderror
 }
+
+// Creates an error message and recovers if another error is produced
+func createFaultyResponse(code int, message string, affinity string, failmessage string, w http.ResponseWriter) {
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(code)
+	error := Response{
+		Code:    code,
+		Message: message,
+	}
+	err := json.NewEncoder(w).Encode(error)
+
+	// Checking that the bad request encoding has gone through successfully
+	if err != nil {
+		_ = createBackendError(affinity, failmessage, err, w)
+	}
+}

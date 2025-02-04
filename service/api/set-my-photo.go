@@ -13,33 +13,20 @@ import (
 func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("content-type", "application/json")
 
+	// Logging information
+	const affinity string = "Profile photo setting"
+
 	// Authentication
 	token, err := Authentication(w, r, rt)
 	if err != nil {
-		fmt.Println(err.Error())
+		return
 	}
 
 	// Getting the new profile picture photo
 	var newPhoto Image
 	err = json.NewDecoder(r.Body).Decode(&newPhoto)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		badRequest := Response{
-			Code:    400,
-			Message: "The received body is not an image",
-		}
-		err = json.NewEncoder(w).Encode(badRequest)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Profile picture setting",
-				Message:  "Request encoding for badly formatted image has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
-			return
-		}
+		createFaultyResponse(http.StatusBadRequest, "The received body is not an image", affinity, "Request encoding for badly formatted image has failed", w)
 		return
 	}
 
@@ -47,44 +34,18 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	match, err := regexp.MatchString(`^0b[01]{1,14}$`, newPhoto.Image)
 
 	if err != nil {
-		regexError := BackendError{
-			Affinity: "Profile picture setting",
-			Message:  "The string matching mechanism for picture string has failed",
-			OG_error: err,
-		}
-		fmt.Println(regexError.Error())
+		_ = createBackendError(affinity, "The string matching mechanism for picture string has failed", err, w)
 		return
 	}
 	if !match {
-		w.WriteHeader(http.StatusBadRequest)
-		badPic := Response{
-			Code:    400,
-			Message: "The profile picture is not valid (it may be too short, or long, or containing not valid characters)",
-		}
-		err = json.NewEncoder(w).Encode(badPic)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Profile picture setting",
-				Message:  "Request encoding for username not matching with regex response has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
-			return
-		}
+		createFaultyResponse(http.StatusBadRequest, "The profile picture is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not valid profile picture response failed", w)
 		return
 	}
 
 	// Actually setting the picture in the DB
 	_, err = rt.db.Update("users", fmt.Sprintf("propic = '%s'", newPhoto.Image), fmt.Sprintf("id = '%s'", token.Identifier))
 	if err != nil {
-		propicUpdateError := BackendError{
-			Affinity: "Profile picture setting",
-			Message:  "Updating user with the new profile picture has failed",
-			OG_error: err,
-		}
-		fmt.Println(propicUpdateError.Error())
+		_ = createBackendError(affinity, "Updating user with the new profile picture has failed", err, w)
 		return
 	}
 

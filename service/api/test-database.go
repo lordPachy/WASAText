@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -60,40 +59,4 @@ func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httpr
 	w.Header().Set("content-type", "text/plain")
 	w.WriteHeader(http.StatusNoContent)
 	_, _ = w.Write([]byte("Tests executed!"))
-}
-
-func UsersRowReading(res *sql.Rows) ([]string, error) {
-	// Retrieving the values from rows
-	var answer []string // array of actual values
-	var id, username, propic *string
-	for {
-		if res.Next() { // there is another value to be scanned
-			err := res.Scan(&id, &username, &propic)
-			if err == nil {
-				if propic == nil {
-					tmp := "Null"
-					propic = &tmp
-				}
-				answer = append(answer, *id, *username, *propic)
-			} else {
-				return nil, err // the scan has had an error
-			}
-		} else {
-			if res.Err() == nil { // there are no more values to scan in the current set
-				if res.NextResultSet() { // there are values to be scanned
-					continue // in the next set
-				} else {
-					if res.Err() == nil { // there are no more values, and the scan can end
-						break
-					} else { // next set scan went unsuccessfully
-						return nil, res.Err()
-					}
-				}
-			} else { // next scan went unsuccessfully
-				return nil, res.Err()
-			}
-		}
-	}
-
-	return answer, nil
 }

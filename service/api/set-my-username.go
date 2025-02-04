@@ -14,7 +14,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	w.Header().Set("content-type", "application/json")
 
 	// Logging information
-	affinity := "Username setting"
+	const affinity string = "Username setting"
 
 	// Authentication
 	token, err := Authentication(w, r, rt)
@@ -26,18 +26,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	var newUsername Username
 	err = json.NewDecoder(r.Body).Decode(&newUsername)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		badRequest := Response{
-			Code:    400,
-			Message: "The received body is not a username",
-		}
-		err = json.NewEncoder(w).Encode(badRequest)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			_ = createBackendError(affinity, "Request encoding for badly formatted username has failed", err, w)
-			return
-		}
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for badly formatted username has failed", w)
 		return
 	}
 
@@ -50,42 +39,18 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	if !match {
-		w.WriteHeader(http.StatusBadRequest)
-		badUsername := Response{
-			Code:    400,
-			Message: "The username is not valid (it may be too short, or long, or containing not valid characters)",
-		}
-		err = json.NewEncoder(w).Encode(badUsername)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			_ = createBackendError(affinity, "Request encoding for username not matching with regex response has failed", err, w)
-			return
-		}
+		createFaultyResponse(http.StatusBadRequest, "The username is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for username not matching with regex response has failed", w)
 		return
 	}
 
 	// Uniqueness check
-	other_users, err := UsernameRetrieval(newUsername, rt)
+	other_users, err := UserFromUsernameRetrieval(newUsername, rt, w)
 	if err != nil {
-		_ = createBackendError(affinity, "New username retrieving for uniqueness check has failed", err, w)
 		return
 	}
 
 	if len(other_users) > 0 {
-		w.WriteHeader(http.StatusForbidden)
-		forbiddenError := Response{
-			Code:    403,
-			Message: "The username tried out is already in use",
-		}
-		err = json.NewEncoder(w).Encode(forbiddenError)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			_ = createBackendError(affinity, "Request encoding for username already in user request has failed", err, w)
-			return
-		}
-
+		createFaultyResponse(http.StatusForbidden, "The username tried out is already in use", affinity, "Request encoding for username already in user request has failed", w)
 		return
 	}
 

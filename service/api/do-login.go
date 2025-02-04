@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -13,54 +12,24 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	w.Header().Set("content-type", "application/json")
 	var username Username
 
+	// Logging information
+	affinity := "Login"
+
 	// Getting the username
 	err := json.NewDecoder(r.Body).Decode(&username)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		badRequest := Response{
-			Code:    400,
-			Message: "The received body is not a username",
-		}
-		err = json.NewEncoder(w).Encode(badRequest)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Login",
-				Message:  "Request encoding for username not correctly formatted response has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
-			return
-		}
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for username not correctly formatted response has failed", w)
 		return
 	}
 
 	// Id retrieval
-	users, err := UsernameRetrieval(username, rt)
+	users, err := UserFromUsernameRetrieval(username, rt, w)
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
 
 	if len(users) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		notExisting := Response{
-			Code:    404,
-			Message: "No user corresponds to the given username",
-		}
-		err = json.NewEncoder(w).Encode(notExisting)
-
-		// Checking that the bad request encoding has gone through successfully
-		if err != nil {
-			encodingError := BackendError{
-				Affinity: "Login",
-				Message:  "Request encoding for user not found in database response has failed",
-				OG_error: err,
-			}
-			fmt.Println(encodingError.Error())
-			return
-		}
+		createFaultyResponse(http.StatusNotFound, "No user corresponds to the given username", affinity, "Request encoding for user not found in database response has failed", w)
 		return
 	}
 
@@ -71,14 +40,10 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	accessToken := Access_token{
 		Identifier: id,
 	}
+
 	err = json.NewEncoder(w).Encode(accessToken)
 	if err != nil {
-		encodingError := BackendError{
-			Affinity: "User creation",
-			Message:  "Encoding the new access token has failed",
-			OG_error: err,
-		}
-		fmt.Println(encodingError.Error())
+		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w)
 		return
 	}
 }
