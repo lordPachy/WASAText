@@ -11,7 +11,7 @@ but always through other functions. Thus, they get to create
 their own errors, and manage the writer.
 */
 
-// It retrieves an array of strings (that should represent a single user) from id.
+// It retrieves an array of strings (that should represent a single user) from id. Each string element is a row element in the db.
 func UserFromIdRetrieval(id Access_token, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
 	const affinity string = "User retrieval from id"
@@ -32,7 +32,7 @@ func UserFromIdRetrieval(id Access_token, rt *_router, w http.ResponseWriter) ([
 	return users, nil
 }
 
-// It retrieves an array of strings (that should represent a single user) from id.
+// It retrieves an array of strings (that should represent a single user) from id. Each string element is a row element in the db.
 func UserFromUsernameRetrieval(username Username, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
 	const affinity string = "User retrieval from username"
@@ -90,7 +90,7 @@ func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, erro
 	return true, nil
 }
 
-// It retrieves a conversation from the database.
+// It retrieves a conversation from the database. Each string element is a row element in the db.
 func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
 	const affinity string = "Single conversation retrieval"
@@ -147,7 +147,7 @@ func PrivConversationFromMembersExistence(user1 Username, user2 Username, rt *_r
 	return false, nil
 }
 
-// It retrieves a private conversation from the database, given the two members.
+// It retrieves a private conversation from the database, given the two members. Each string element is a row element in the db.
 func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
 	const affinity string = "Private conversation retrieval, from members"

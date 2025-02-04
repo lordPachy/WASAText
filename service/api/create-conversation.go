@@ -19,7 +19,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 	const affinity string = "Conversation creation"
 
 	// Authentication
-	_, err := Authentication(w, r, rt)
+	token, err := Authentication(w, r, rt)
 	if err != nil {
 		return
 	}
@@ -39,9 +39,20 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	if !match {
-		createFaultyResponse(http.StatusBadRequest, "Conversation request incorrectly or not valid", affinity, "Request encoding for conversation encoding not correcly formatted response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "Conversation request parsed incorrectly or not valid", affinity, "Request encoding for conversation encoding not correcly formatted response has failed", w)
 		return
 	}
+
+	// Adding sender's own id to the request
+	user, err := UserFromIdRetrieval(token, rt, w)
+	if err != nil {
+		return
+	}
+
+	sender := Username{
+		Name: user[1],
+	}
+	newConvo.Members = append(newConvo.Members, sender)
 
 	// Private conversations are unique: checking if the private convo already exists
 	if !newConvo.IsGroup {
@@ -89,23 +100,22 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 			return
 		}
 	} else {
-		// Writing in the database of group members
-		for _, usr := range newConvo.Members {
-			query := fmt.Sprintf("(%d, '%s')", id, usr.Name)
-
-			_, err = rt.db.Insert("groupmembers", query)
-			if err != nil {
-				_ = createBackendError(affinity, "Inserting the new groupmember into the database has failed", err, w)
-				return
-			}
-		}
-
 		// Writing in the database of groups
 		query := fmt.Sprintf("(%d, '%s', NULL)", id, newConvo.GroupName)
 		_, err = rt.db.Insert("groupchats", query)
 		if err != nil {
 			_ = createBackendError(affinity, "Inserting the new group into the database has failed", err, w)
 			return
+		}
+
+		// Writing in the database of group members
+		for _, usr := range newConvo.Members {
+			query := fmt.Sprintf("(%d, '%s')", id, usr.Name)
+			_, err = rt.db.Insert("groupmembers", query)
+			if err != nil {
+				_ = createBackendError(affinity, "Inserting the new groupmember into the database has failed", err, w)
+				return
+			}
 		}
 	}
 	// Writing the response in HTTP
@@ -135,7 +145,7 @@ func checkConversationRequestCorrectness(newConvo ConversationRequest, rt *_rout
 	if !newConvo.IsGroup {
 		user_number = len(newConvo.Members) == 1
 	} else {
-		user_number = ((len(newConvo.Members) >= 2) && (len(newConvo.Members) <= 1000))
+		user_number = ((len(newConvo.Members) >= 1) && (len(newConvo.Members) <= 999))
 	}
 
 	// Ensuring members actually exist
@@ -152,13 +162,11 @@ func checkConversationRequestCorrectness(newConvo ConversationRequest, rt *_rout
 	// Ensuring the groupname is valid (if it is a group)
 	if newConvo.IsGroup {
 		// Checking if the username is valid
-		group_name, err = regexp.MatchString(`^\w{3,16}$`, newConvo.GroupName)
-
+		group_name, err = regexp.MatchString(`^[\w\ ]{3,16}$`, newConvo.GroupName)
 		if err != nil {
 			return false, createBackendError(affinity, "The string matching mechanism for conversation request correctness has failed", err, w)
 		}
 	}
-
 	correctness := user_number && user_existence && group_name
 	return correctness, nil
 }
