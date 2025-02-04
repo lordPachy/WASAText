@@ -90,6 +90,20 @@ func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, erro
 	return true, nil
 }
 
+// // It check the existence of a chat.
+func ConversationFromIdExistence(id int, rt *_router, w http.ResponseWriter) (bool, error) {
+	chat, err := ConversationFromIdRetrieval(id, rt, w)
+	if err != nil {
+		return false, err
+	}
+
+	if len(chat) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // It retrieves a conversation from the database. Each string element is a row element in the db.
 func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
@@ -183,8 +197,4 @@ func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_r
 	}
 
 	return chats, nil
-}
-
-func newPrivConversation(id1 Access_token, id2 Access_token, rt *Router) {
-
 }

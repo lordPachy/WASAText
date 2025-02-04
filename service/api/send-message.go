@@ -25,13 +25,13 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	convs, err := ConversationFromIdRetrieval(convID, rt, w)
+	exists, err := ConversationFromIdExistence(convID, rt, w)
 	if err != nil {
 		return
 	}
-
-	if len(convs) == 0 {
-
+	if !exists {
+		createFaultyResponse(http.StatusNotFound, "Conversation not found", affinity, "Response message encoding for conversation not found error has failed", w)
+		return
 	}
 
 	// Authentication
@@ -87,6 +87,12 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	_, err = rt.db.Insert("messages", query)
 	if err != nil {
 		_ = createBackendError(affinity, "Inserting the new message into the database has failed", err, w)
+		return
+	}
+
+	// Writing the message into the message recording tables
+	err = update_messages(ConversationID{Id: convID}, MessageID{Id: id}, w, rt)
+	if err != nil {
 		return
 	}
 

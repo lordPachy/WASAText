@@ -18,6 +18,15 @@ type ConversationID struct {
 	Id int `json:"id"`
 }
 
+type AddToGroupRequest struct {
+	User  Username       `json:"username"`
+	Group ConversationID `json:"group"`
+}
+
+type MessageID struct {
+	Id int `json:"id"`
+}
+
 type Response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

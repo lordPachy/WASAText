@@ -20,7 +20,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/conversations", rt.createConversation)
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)
 	rt.router.POST("/conversations/:conversationid", rt.sendMessage)
-	// 	rt.router.boh("/conversations/:conversationid", rt.addToGroup)
+	rt.router.PUT("/groups", rt.addToGroup)
 	rt.router.DELETE("/conversations/:conversationid", rt.leaveGroup)
 
 	rt.router.PUT("/conversations/:conversationid/settings/groupname", rt.setGroupName)
