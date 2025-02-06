@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS groupchats;
 DROP TABLE IF EXISTS privmessages;
 DROP TABLE IF EXISTS privchats;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS groupmessageschecks;
 CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, propic TEXT);
 CREATE TABLE privchats (id INTEGER PRIMARY KEY, member1 TEXT NOT NULL, member2 TEXT NOT NULL, FOREIGN KEY (member1) REFERENCES users(username) ON UPDATE CASCADE, FOREIGN KEY (member2) REFERENCES users(username) ON UPDATE CASCADE);
 CREATE TABLE privmessages (id INTEGER PRIMARY KEY, messageID INTEGER UNIQUE NOT NULL, FOREIGN KEY (id) REFERENCES privchats(id));
@@ -17,5 +18,5 @@ CREATE TABLE groupmessages (id INTEGER PRIMARY KEY, messageID INTEGER UNIQUE NOT
 CREATE TABLE messages (id INTEGER PRIMARY KEY, sender TEXT NOT NULL, created_at TIMESTAMP NOT NULL, content TEXT, photo TEXT, checkmarks INTEGER NOT NULL, replying_to INTEGER, FOREIGN KEY (sender) REFERENCES users(username) ON UPDATE CASCADE, FOREIGN KEY (replying_to) REFERENCES messages(id));
 CREATE TABLE messagecomments (id INTEGER PRIMARY KEY, commentID INTEGER UNIQUE NOT NULL, FOREIGN KEY (id) REFERENCES messages(id) ON DELETE CASCADE);
 CREATE TABLE comments (id INTEGER PRIMARY KEY, sender TEXT NOT NULL, reaction TEXT NOT NULL, FOREIGN KEY (sender) REFERENCES users(username) ON UPDATE CASCADE, FOREIGN KEY (id) REFERENCES messagecomments(commentID) ON DELETE CASCADE);
-
+CREATE TABLE groupmessageschecks (groupID INTEGER, messageID INTEGER, member TEXT, checkmarks INTEGER, PRIMARY KEY (groupID, messageID, member), FOREIGN KEY (groupID, member) REFERENCES groupmembers(id, member) ON UPDATE CASCADE ON DELETE CASCADE, FOREIGN KEY (groupID, messageID) REFERENCES groupmessages(id, messageID) ON DELETE CASCADE); 
 
