@@ -67,6 +67,20 @@ func UserFromUsernameExists(username Username, rt *_router, w http.ResponseWrite
 	return false, nil
 }
 
+// It check the existence of a user.
+func UserFromIDExists(token Access_token, rt *_router, w http.ResponseWriter) (bool, error) {
+	user, err := UserFromIdRetrieval(token, rt, w)
+	if err != nil {
+		return false, err
+	}
+
+	if len(user) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // It checks for the existence of a message.
 func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, error) {
 	// Logging information
@@ -138,7 +152,7 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 	}
 
 	// Reading the rows
-	chats, err := GroupmembersRowReading(rows)
+	chats, err := GroupMembersRowReading(rows)
 
 	if err != nil {
 		return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w)
@@ -197,4 +211,33 @@ func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_r
 	}
 
 	return chats, nil
+}
+
+// It checks if a user (either from username or ID) belongs to a given group. It may also return false if the user or group does not exist.
+func UserBelongsToGroup(token Access_token, groupID ConversationID, rt *_router, w http.ResponseWriter) (bool, error) {
+	// Logging information
+	const affinity string = "User - group relation checking"
+
+	user, err := UserFromIdRetrieval(token, rt, w)
+	if err != nil {
+		return false, err
+	}
+
+	// Taking the username from the query
+	username := user[1]
+
+	// SQL query
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d' AND member = '%s'", groupID.Id, username))
+	if err != nil {
+		return false, createBackendError(affinity, "SELECT in the database seeking group-user matching failed", err, w)
+	}
+
+	// Reading the rows
+	chats, err := GroupMembersRowReading(rows)
+
+	if err != nil {
+		return false, createBackendError(affinity, "Reading the database rows that were seeking group-user matching failed", err, w)
+	}
+
+	return len(chats) > 0, nil
 }

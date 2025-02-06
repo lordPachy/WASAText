@@ -30,7 +30,6 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/conversations/:conversationid/messages/:messageid", rt.commentMessage)
 	rt.router.POST("/conversations/:conversationid/messages/:messageid", rt.forwardMessage)
 	rt.router.DELETE("/conversations/:conversationid/messages/:messageid", rt.deleteMessage)
-
 	rt.router.DELETE("/conversations/:conversationid/messages/:messageid/comments/:commentid", rt.uncommentMessage)
 
 	// Predefined routes

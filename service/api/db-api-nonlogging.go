@@ -70,7 +70,7 @@ func UsersRowReading(res *sql.Rows) ([]string, error) {
 }
 
 // It retrieves groupmembers from sql's queried rows.
-func GroupmembersRowReading(res *sql.Rows) ([]string, error) {
+func GroupMembersRowReading(res *sql.Rows) ([]string, error) {
 	// Retrieving the values from rows
 	var answer []string // array of actual values
 	var id, member *string
