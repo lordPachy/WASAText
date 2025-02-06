@@ -1,14 +1,13 @@
 PRAGMA foreign_keys = ON;
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS messagecomments;
-DROP TABLE IF EXISTS messages;
-DROP TABLE IF EXISTS groupmessages;
-DROP TABLE IF EXISTS groupmembers;
-DROP TABLE IF EXISTS groupchats;
-DROP TABLE IF EXISTS privmessages;
-DROP TABLE IF EXISTS privchats;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS groupmessageschecks;
+
+-- Cleaning up the database
+PRAGMA writable_schema = 1;
+DELETE FROM sqlite_master;
+PRAGMA writable_schema = 0;
+VACUUM;
+PRAGMA integrity_check;
+
+-- Creating the actual schema
 CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, propic TEXT);
 CREATE TABLE privchats (id INTEGER PRIMARY KEY, member1 TEXT NOT NULL, member2 TEXT NOT NULL, FOREIGN KEY (member1) REFERENCES users(username) ON UPDATE CASCADE, FOREIGN KEY (member2) REFERENCES users(username) ON UPDATE CASCADE);
 CREATE TABLE privmessages (id INTEGER PRIMARY KEY, messageID INTEGER, FOREIGN KEY (id) REFERENCES privchats(id), FOREIGN KEY (messageID) REFERENCES messages(id) ON DELETE CASCADE);
