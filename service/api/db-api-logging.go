@@ -241,3 +241,32 @@ func UserBelongsToGroup(token Access_token, groupID ConversationID, rt *_router,
 
 	return len(chats) > 0, nil
 }
+
+// It returns a list of usernames of a given group. It assumes the group exists.
+func UsersInGroup(groupID ConversationID, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "User of a group retrieving"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", groupID.Id))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking group members failed", err, w, rt)
+	}
+
+	// Reading the rows
+	users, err := GroupMembersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking group members failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not usernames
+	var usernames []string
+	for i, user := range users {
+		if i%2 == 1 {
+			usernames = append(usernames, user)
+		}
+	}
+
+	return usernames, nil
+}

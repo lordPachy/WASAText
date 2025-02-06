@@ -10,8 +10,11 @@ printf "PRIVATE CHAT CREATION\n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${auth}" --request PUT --data '{"isgroup":false, "members":[{"name":"Topolino"}], "groupname":null}' http://0.0.0.0:3000/conversations
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT CREATION\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${auth}" --request PUT --data '{"isgroup":true, "members":[{"name":"Topolino"}], "groupname": "Eccehomo"}' http://0.0.0.0:3000/conversations
+groupid="$(curl -s --header "Content-Type: application/json" --header "Authentication: ${auth}" --request PUT --data '{"isgroup":true, "members":[{"name":"Topolino"}], "groupname": "Eccehomo"}' http://0.0.0.0:3000/conversations | jq '.id')"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "PRIVATE CHAT CREATION: ALREADY CREATED\n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${auth}" --request PUT --data '{"isgroup":false, "members":[{"name":"Topolino"}], "groupname":null}' http://0.0.0.0:3000/conversations
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT MESSAGE\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${auth}" --request POST --data '{"content":"Hi, Im Pippo", "replyingto": -1}' http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"

@@ -96,6 +96,12 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
+	// If it is a group message, we must update the checkmarks table
+	err = groupMessageCheckmarksUpdate(ConversationID{convID}, MessageID{id}, Username{user[1]}, w, rt)
+	if err != nil {
+		return
+	}
+
 	// Writing the response in HTTP
 	// Accepted request
 	w.Header().Set("content-type", "text-plain")
