@@ -38,3 +38,18 @@ func (db *appdbimpl) Select(columns string, table string, conditions string) (*s
 
 	return res, err
 }
+
+// It retrieves data from a table.
+//
+// Columns should be in the format col1, col2, col3... coln.
+// Filter should be in the format col1 = val1, col2 = val2,... colk = valk.
+func (db *appdbimpl) Filter(columns string, table string, group_by string, conditions string) (*sql.Rows, error) {
+	// Actual query
+	query := fmt.Sprintf("SELECT %s FROM %s GROUP BY %s HAVING %s", columns, table, group_by, conditions)
+	res, err := db.c.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, err
+}

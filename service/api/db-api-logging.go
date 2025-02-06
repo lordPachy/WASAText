@@ -270,3 +270,113 @@ func UsersInGroup(groupID ConversationID, rt *_router, w http.ResponseWriter) ([
 
 	return usernames, nil
 }
+
+// It returns a list of received message ids from a group. It assumes the group exists.
+func ReceivedGroupMessages(rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Received group messages retrieving"
+
+	// Retrieving messages
+	rows, err := rt.db.Filter("*", "groupmessageschecks", "messageid", "MIN(checkmarks) = 1")
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking received group messages failed", err, w, rt)
+	}
+
+	// Reading the rows
+	retrievedRows, err := GroupmessageschecksRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking received group messages failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not message ids
+	var message_ids []string
+	for i, el := range retrievedRows {
+		if i%4 == 1 {
+			message_ids = append(message_ids, el)
+		}
+	}
+
+	return message_ids, nil
+}
+
+// It returns a list of read message ids from a group. It assumes the group exists.
+func ReadGroupMessages(rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Read group messages retrieving"
+
+	// Retrieving messages
+	rows, err := rt.db.Filter("*", "groupmessageschecks", "messageid", "MIN(checkmarks) = 2")
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking read group messages failed", err, w, rt)
+	}
+
+	// Reading the rows
+	retrievedRows, err := GroupmessageschecksRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking read group messages failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not message ids
+	var message_ids []string
+	for i, el := range retrievedRows {
+		if i%4 == 1 {
+			message_ids = append(message_ids, el)
+		}
+	}
+
+	return message_ids, nil
+}
+
+// It returns a list of message ids from a private conversation. It assumes the conversation exists.
+func MessagesFromPrivateConvo(user Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Messages from chat retrieving"
+
+	// SQL query #1: retrieving chat ids where the user is present
+	rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' OR member2 = '%s'", user.Name, user.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking chat ids from username failed", err, w, rt)
+	}
+
+	// Reading the rows
+	users, err := PrivchatsRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking chat ids from username failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not chat ids
+	var ids []string
+	for i, id := range users {
+		if i%3 == 0 {
+			ids = append(ids, id)
+		}
+	}
+
+	// SQL query #2: retrieving messages sent on chat where the user is present
+	var message_ids []string
+	for _, id := range ids {
+		rows, err := rt.db.Select("*", "privmessages", fmt.Sprintf("id = '%s'", id))
+		if err != nil {
+			return nil, createBackendError(affinity, "SELECT in the database seeking message ids from chat id failed", err, w, rt)
+		}
+
+		// Reading the rows
+		queriedrows, err := PrivmessagesRowReading(rows)
+
+		if err != nil {
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking message ids from chat id failed", err, w, rt)
+		}
+
+		// Eliminating elements of the array that are not chat ids
+		for i, el := range queriedrows {
+			if i%2 == 1 {
+				message_ids = append(message_ids, el)
+			}
+		}
+	}
+
+	return message_ids, nil
+}
