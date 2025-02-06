@@ -28,7 +28,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 	var newConvo ConversationRequest
 	err = json.NewDecoder(r.Body).Decode(&newConvo)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a conversation request", affinity, "Request encoding for badly formatted conversation request response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a conversation request", affinity, "Request encoding for badly formatted conversation request response has failed", w, rt)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	if !match {
-		createFaultyResponse(http.StatusBadRequest, "Conversation request parsed incorrectly or not valid", affinity, "Request encoding for conversation encoding not correcly formatted response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "Conversation request parsed incorrectly or not valid", affinity, "Request encoding for conversation encoding not correcly formatted response has failed", w, rt)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 			id, err := strconv.Atoi(chat[0])
 
 			if err != nil {
-				_ = createBackendError(affinity, "Converting private chat id for existing private chat failed", err, w)
+				_ = createBackendError(affinity, "Converting private chat id for existing private chat failed", err, w, rt)
 				return
 			}
 
@@ -76,7 +76,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 			}
 			err = json.NewEncoder(w).Encode(newToken)
 			if err != nil {
-				_ = createBackendError(affinity, "Encoding the private chat id for an existing private chat has failed", err, w)
+				_ = createBackendError(affinity, "Encoding the private chat id for an existing private chat has failed", err, w, rt)
 				return
 			}
 
@@ -96,7 +96,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 
 		_, err = rt.db.Insert("privchats", query)
 		if err != nil {
-			_ = createBackendError(affinity, "Inserting the new conversation into the database has failed", err, w)
+			_ = createBackendError(affinity, "Inserting the new conversation into the database has failed", err, w, rt)
 			return
 		}
 	} else {
@@ -104,7 +104,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 		query := fmt.Sprintf("(%d, '%s', NULL)", id, newConvo.GroupName)
 		_, err = rt.db.Insert("groupchats", query)
 		if err != nil {
-			_ = createBackendError(affinity, "Inserting the new group into the database has failed", err, w)
+			_ = createBackendError(affinity, "Inserting the new group into the database has failed", err, w, rt)
 			return
 		}
 
@@ -113,7 +113,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 			query := fmt.Sprintf("(%d, '%s')", id, usr.Name)
 			_, err = rt.db.Insert("groupmembers", query)
 			if err != nil {
-				_ = createBackendError(affinity, "Inserting the new groupmember into the database has failed", err, w)
+				_ = createBackendError(affinity, "Inserting the new groupmember into the database has failed", err, w, rt)
 				return
 			}
 		}
@@ -126,7 +126,7 @@ func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, ps
 	}
 	err = json.NewEncoder(w).Encode(newToken)
 	if err != nil {
-		_ = createBackendError(affinity, "Encoding the chat id for a new chat has failed", err, w)
+		_ = createBackendError(affinity, "Encoding the chat id for a new chat has failed", err, w, rt)
 		return
 	}
 }
@@ -164,7 +164,7 @@ func checkConversationRequestCorrectness(newConvo ConversationRequest, rt *_rout
 		// Checking if the username is valid
 		group_name, err = regexp.MatchString(`^[\w\ ]{3,16}$`, newConvo.GroupName)
 		if err != nil {
-			return false, createBackendError(affinity, "The string matching mechanism for conversation request correctness has failed", err, w)
+			return false, createBackendError(affinity, "The string matching mechanism for conversation request correctness has failed", err, w, rt)
 		}
 	}
 	correctness := user_number && user_existence && group_name

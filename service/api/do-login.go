@@ -18,7 +18,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	// Getting the username
 	err := json.NewDecoder(r.Body).Decode(&username)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for username not correctly formatted response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for username not correctly formatted response has failed", w, rt)
 		return
 	}
 
@@ -29,7 +29,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	if len(users) == 0 {
-		createFaultyResponse(http.StatusNotFound, "No user corresponds to the given username", affinity, "Request encoding for user not found in database response has failed", w)
+		createFaultyResponse(http.StatusNotFound, "No user corresponds to the given username", affinity, "Request encoding for user not found in database response has failed", w, rt)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	err = json.NewEncoder(w).Encode(accessToken)
 	if err != nil {
-		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w)
+		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w, rt)
 		return
 	}
 }

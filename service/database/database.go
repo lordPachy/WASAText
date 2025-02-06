@@ -71,13 +71,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 			// fmt.Println(request)
 			_, err := db.Exec(request)
 			if err != nil {
-				fmt.Println(err.Error())
+				// fmt.Println(err.Error())
 				continue
 			}
 		}
 	}
 
-	fmt.Println("Database creation: completed")
+	// fmt.Println("Database creation: completed")
 
 	return &appdbimpl{
 		c: db,

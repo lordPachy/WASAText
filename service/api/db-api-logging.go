@@ -19,14 +19,14 @@ func UserFromIdRetrieval(id Access_token, rt *_router, w http.ResponseWriter) ([
 	// SQL query
 	rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id.Identifier))
 	if err != nil {
-		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w)
+		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w, rt)
 	}
 
 	// Reading the rows
 	users, err := UsersRowReading(rows)
 
 	if err != nil {
-		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w)
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w, rt)
 	}
 
 	return users, nil
@@ -40,14 +40,14 @@ func UserFromUsernameRetrieval(username Username, rt *_router, w http.ResponseWr
 	// SQL query
 	rows, err := rt.db.Select("*", "users", fmt.Sprintf("username = '%s'", username.Name))
 	if err != nil {
-		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same username failed", err, w)
+		return nil, createBackendError(affinity, "SELECT in the database seeking users with the same username failed", err, w, rt)
 	}
 
 	// Reading the rows
 	other_users, err := UsersRowReading(rows)
 
 	if err != nil {
-		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same username failed", err, w)
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking users with the same username failed", err, w, rt)
 	}
 
 	return other_users, nil
@@ -89,14 +89,14 @@ func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, erro
 	// Querying database rows
 	rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
 	if err != nil {
-		return false, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w)
+		return false, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w, rt)
 	}
 
 	// Checking the queried rows
 	other_messages, err := MessageRowReading(rows)
 
 	if err != nil {
-		return false, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w)
+		return false, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w, rt)
 	} else if len(other_messages) == 0 {
 		return false, nil
 	}
@@ -128,14 +128,14 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 		// SQL query
 		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("id = '%d'", id))
 		if err != nil {
-			return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w)
+			return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w, rt)
 		}
 
 		// Reading the rows
 		chats, err := PrivchatsRowReading(rows)
 
 		if err != nil {
-			return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w)
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w, rt)
 		}
 
 		if len(chats) > 0 {
@@ -148,14 +148,14 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 	// SQL query
 	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", id))
 	if err != nil {
-		return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w)
+		return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w, rt)
 	}
 
 	// Reading the rows
 	chats, err := GroupMembersRowReading(rows)
 
 	if err != nil {
-		return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w)
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations with the same id failed", err, w, rt)
 	}
 
 	return chats, nil
@@ -183,14 +183,14 @@ func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_r
 	// SQL query
 	rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' AND member2 = '%s'", user1.Name, user2.Name))
 	if err != nil {
-		return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w)
+		return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w, rt)
 	}
 
 	// Reading the rows
 	chats, err := PrivchatsRowReading(rows)
 
 	if err != nil {
-		return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w)
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w, rt)
 	}
 
 	// They might be in the other order around
@@ -198,14 +198,14 @@ func PrivConversationFromMembersRetrieval(user1 Username, user2 Username, rt *_r
 		// SQL query
 		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' AND member2 = '%s'", user2.Name, user1.Name))
 		if err != nil {
-			return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w)
+			return nil, createBackendError(affinity, "SELECT in the database seeking private conversations with the same username failed", err, w, rt)
 		}
 
 		// Reading the rows
 		chats, err = PrivchatsRowReading(rows)
 
 		if err != nil {
-			return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w)
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking private conversations with the same username failed", err, w, rt)
 		}
 
 	}
@@ -229,14 +229,14 @@ func UserBelongsToGroup(token Access_token, groupID ConversationID, rt *_router,
 	// SQL query
 	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d' AND member = '%s'", groupID.Id, username))
 	if err != nil {
-		return false, createBackendError(affinity, "SELECT in the database seeking group-user matching failed", err, w)
+		return false, createBackendError(affinity, "SELECT in the database seeking group-user matching failed", err, w, rt)
 	}
 
 	// Reading the rows
 	chats, err := GroupMembersRowReading(rows)
 
 	if err != nil {
-		return false, createBackendError(affinity, "Reading the database rows that were seeking group-user matching failed", err, w)
+		return false, createBackendError(affinity, "Reading the database rows that were seeking group-user matching failed", err, w, rt)
 	}
 
 	return len(chats) > 0, nil

@@ -26,7 +26,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	var newUsername Username
 	err = json.NewDecoder(r.Body).Decode(&newUsername)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for badly formatted username has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Request encoding for badly formatted username has failed", w, rt)
 		return
 	}
 
@@ -34,12 +34,12 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	match, err := regexp.MatchString(`^\w{3,16}$`, newUsername.Name)
 
 	if err != nil {
-		_ = createBackendError(affinity, "The string matching mechanism for id creation has failed", err, w)
+		_ = createBackendError(affinity, "The string matching mechanism for id creation has failed", err, w, rt)
 		return
 	}
 
 	if !match {
-		createFaultyResponse(http.StatusBadRequest, "The username is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for username not matching with regex response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The username is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for username not matching with regex response has failed", w, rt)
 		return
 	}
 
@@ -50,14 +50,14 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	if len(other_users) > 0 {
-		createFaultyResponse(http.StatusForbidden, "The username tried out is already in use", affinity, "Request encoding for username already in user request has failed", w)
+		createFaultyResponse(http.StatusForbidden, "The username tried out is already in use", affinity, "Request encoding for username already in user request has failed", w, rt)
 		return
 	}
 
 	// Actually setting the username in the DB
 	_, err = rt.db.Update("users", fmt.Sprintf("username = '%s'", newUsername.Name), fmt.Sprintf("id = '%s'", token.Identifier))
 	if err != nil {
-		_ = createBackendError(affinity, "Updating user with the new id has failed", err, w)
+		_ = createBackendError(affinity, "Updating user with the new id has failed", err, w, rt)
 		return
 	}
 

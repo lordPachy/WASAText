@@ -25,7 +25,7 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, ps httprou
 	var newMembership AddToGroupRequest
 	err = json.NewDecoder(r.Body).Decode(&newMembership)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a group membership request", affinity, "Request encoding for badly formatted group membership request response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a group membership request", affinity, "Request encoding for badly formatted group membership request response has failed", w, rt)
 		return
 	}
 
@@ -40,7 +40,7 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, ps httprou
 
 	_, err = rt.db.Insert("groupmembers", query)
 	if err != nil {
-		_ = createBackendError(affinity, "Inserting the new group membership into the database has failed", err, w)
+		_ = createBackendError(affinity, "Inserting the new group membership into the database has failed", err, w, rt)
 		return
 	}
 	// Writing the response in HTTP
@@ -63,7 +63,7 @@ func checkMembershipRequestCorrectness(newMembership AddToGroupRequest, adder Ac
 	}
 
 	if !user_existence {
-		createFaultyResponse(http.StatusNotFound, "The user to be added does not exist", affinity, "Response encoding for user not found error has failed", w)
+		createFaultyResponse(http.StatusNotFound, "The user to be added does not exist", affinity, "Response encoding for user not found error has failed", w, rt)
 		return false
 	}
 
@@ -74,7 +74,7 @@ func checkMembershipRequestCorrectness(newMembership AddToGroupRequest, adder Ac
 	}
 
 	if !group_existence {
-		createFaultyResponse(http.StatusNotFound, "The group to be added to does not exist", affinity, "Response encoding for conversation not found error has failed", w)
+		createFaultyResponse(http.StatusNotFound, "The group to be added to does not exist", affinity, "Response encoding for conversation not found error has failed", w, rt)
 		return false
 	}
 
@@ -85,7 +85,7 @@ func checkMembershipRequestCorrectness(newMembership AddToGroupRequest, adder Ac
 	}
 
 	if !adder_belonging {
-		createFaultyResponse(http.StatusNotFound, "The user adding does not belong to the group", affinity, "Response encoding for user not having adding privileges has failed", w)
+		createFaultyResponse(http.StatusNotFound, "The user adding does not belong to the group", affinity, "Response encoding for user not having adding privileges has failed", w, rt)
 		return false
 	}
 

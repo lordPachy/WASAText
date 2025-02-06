@@ -26,7 +26,7 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	var newPhoto Image
 	err = json.NewDecoder(r.Body).Decode(&newPhoto)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not an image", affinity, "Request encoding for badly formatted image has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not an image", affinity, "Request encoding for badly formatted image has failed", w, rt)
 		return
 	}
 
@@ -34,18 +34,18 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	match, err := regexp.MatchString(`^0b[01]{1,14}$`, newPhoto.Image)
 
 	if err != nil {
-		_ = createBackendError(affinity, "The string matching mechanism for picture string has failed", err, w)
+		_ = createBackendError(affinity, "The string matching mechanism for picture string has failed", err, w, rt)
 		return
 	}
 	if !match {
-		createFaultyResponse(http.StatusBadRequest, "The profile picture is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not valid profile picture response failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The profile picture is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not valid profile picture response failed", w, rt)
 		return
 	}
 
 	// Actually setting the picture in the DB
 	_, err = rt.db.Update("users", fmt.Sprintf("propic = '%s'", newPhoto.Image), fmt.Sprintf("id = '%s'", token.Identifier))
 	if err != nil {
-		_ = createBackendError(affinity, "Updating user with the new profile picture has failed", err, w)
+		_ = createBackendError(affinity, "Updating user with the new profile picture has failed", err, w, rt)
 		return
 	}
 

@@ -21,7 +21,7 @@ func update_messages(convID ConversationID, messageID MessageID, w http.Response
 
 		_, err := rt.db.Insert("privmessages", query)
 		if err != nil {
-			return createBackendError(affinity, "Inserting the new message into the database of messages per chat has failed", err, w)
+			return createBackendError(affinity, "Inserting the new message into the database of messages per chat has failed", err, w, rt)
 		}
 	} else {
 		// Writing in the database of groups
@@ -29,7 +29,7 @@ func update_messages(convID ConversationID, messageID MessageID, w http.Response
 
 		_, err := rt.db.Insert("groupmessages", query)
 		if err != nil {
-			return createBackendError(affinity, "Inserting the new message into the database of messages per group has failed", err, w)
+			return createBackendError(affinity, "Inserting the new message into the database of messages per group has failed", err, w, rt)
 		}
 	}
 

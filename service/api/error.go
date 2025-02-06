@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -34,7 +33,7 @@ func (e BackendError) Error() string {
 	return val + ast
 }
 
-func createBackendError(affinity string, message string, og_error error, responsewriter http.ResponseWriter) *BackendError {
+func createBackendError(affinity string, message string, og_error error, responsewriter http.ResponseWriter, rt *_router) *BackendError {
 	backenderror := BackendError{
 		Affinity:       affinity,
 		Message:        message,
@@ -42,12 +41,12 @@ func createBackendError(affinity string, message string, og_error error, respons
 		ResponseWriter: responsewriter,
 	}
 
-	fmt.Println(backenderror.Error())
+	rt.baseLogger.Println(backenderror.Error())
 	return &backenderror
 }
 
 // Creates an error message and recovers if another error is produced
-func createFaultyResponse(code int, message string, affinity string, failmessage string, w http.ResponseWriter) {
+func createFaultyResponse(code int, message string, affinity string, failmessage string, w http.ResponseWriter, rt *_router) {
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(code)
 	error := Response{
@@ -58,6 +57,6 @@ func createFaultyResponse(code int, message string, affinity string, failmessage
 
 	// Checking that the bad request encoding has gone through successfully
 	if err != nil {
-		_ = createBackendError(affinity, failmessage, err, w)
+		_ = createBackendError(affinity, failmessage, err, w, rt)
 	}
 }

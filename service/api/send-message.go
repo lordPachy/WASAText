@@ -21,7 +21,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	// Checking that the conversation actually exists
 	convID, err := strconv.Atoi(ps.ByName("conversationid"))
 	if err != nil {
-		_ = createBackendError(affinity, "Conversation retrieval has failed", err, w)
+		_ = createBackendError(affinity, "Conversation retrieval has failed", err, w, rt)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	if !exists {
-		createFaultyResponse(http.StatusNotFound, "Conversation not found", affinity, "Response message encoding for conversation not found error has failed", w)
+		createFaultyResponse(http.StatusNotFound, "Conversation not found", affinity, "Response message encoding for conversation not found error has failed", w, rt)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	var newMessage RequestMessage
 	err = json.NewDecoder(r.Body).Decode(&newMessage)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a message", affinity, "Request encoding for badly formatted message response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a message", affinity, "Request encoding for badly formatted message response has failed", w, rt)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 
 	if !match {
 		w.WriteHeader(http.StatusBadRequest)
-		createFaultyResponse(http.StatusBadRequest, "Message parsed incorrectly or not valid", affinity, "Request encoding for message not correcly formatted response has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "Message parsed incorrectly or not valid", affinity, "Request encoding for message not correcly formatted response has failed", w, rt)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 
 	_, err = rt.db.Insert("messages", query)
 	if err != nil {
-		_ = createBackendError(affinity, "Inserting the new message into the database has failed", err, w)
+		_ = createBackendError(affinity, "Inserting the new message into the database has failed", err, w, rt)
 		return
 	}
 
@@ -115,7 +115,7 @@ func checkMessageCorrectness(newMessage RequestMessage, rt *_router, w http.Resp
 	if len(newMessage.Content) > 0 {
 		message_validity, err = regexp.MatchString(`.{1,300}`, newMessage.Content)
 		if err != nil {
-			return false, createBackendError(affinity, "Matching message content with appropriate regex failed", err, w)
+			return false, createBackendError(affinity, "Matching message content with appropriate regex failed", err, w, rt)
 		}
 
 		if !message_validity {
@@ -127,7 +127,7 @@ func checkMessageCorrectness(newMessage RequestMessage, rt *_router, w http.Resp
 	if len(newMessage.Photo) > 0 {
 		message_validity, err = regexp.MatchString(`[-A-Za-z0-9+/=]|=[^=]|={3,16}`, newMessage.Photo)
 		if err != nil {
-			return false, createBackendError(affinity, "Matching message photo with appropriate regex failed", err, w)
+			return false, createBackendError(affinity, "Matching message photo with appropriate regex failed", err, w, rt)
 		}
 
 		if !message_validity {
@@ -142,7 +142,7 @@ func checkMessageCorrectness(newMessage RequestMessage, rt *_router, w http.Resp
 	} else {
 		replying_to, err = MessageFromIdExists(newMessage.ReplyingTo, rt, w)
 		if err != nil {
-			return false, createBackendError(affinity, "Checking that the message we are replying to's id failed", err, w)
+			return false, createBackendError(affinity, "Checking that the message we are replying to's id failed", err, w, rt)
 		}
 	}
 
@@ -162,14 +162,14 @@ func MessageIdCreator(rt *_router, w http.ResponseWriter) (int, error) {
 		id = rand.Intn(10001)
 		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
 		if err != nil {
-			return 0, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w)
+			return 0, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w, rt)
 		}
 
 		// Checking that the new id is unique
 		other_messages, err := MessageRowReading(rows)
 
 		if err != nil {
-			return 0, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w)
+			return 0, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w, rt)
 		} else if len(other_messages) == 0 {
 			break
 		}

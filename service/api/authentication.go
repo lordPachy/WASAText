@@ -31,7 +31,7 @@ func Authentication(w http.ResponseWriter, r *http.Request, rt *_router) (Access
 			OG_error: nil,
 		}
 
-		createFaultyResponse(http.StatusUnauthorized, "UnauthorizedError: Access token is missing or invalid.", affinity, "Unauthorized error encoding has failed", w)
+		createFaultyResponse(http.StatusUnauthorized, "UnauthorizedError: Access token is missing or invalid.", affinity, "Unauthorized error encoding has failed", w, rt)
 
 		return token, &notFoundError
 	}

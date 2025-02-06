@@ -22,7 +22,7 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	// Getting the new username
 	err := json.NewDecoder(r.Body).Decode(&newUsername)
 	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Encoding of bad username error failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The received body is not a username", affinity, "Encoding of bad username error failed", w, rt)
 		return
 	}
 
@@ -30,12 +30,12 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	match, err := regexp.MatchString(`^\w{3,16}$`, newUsername.Name)
 
 	if err != nil {
-		_ = createBackendError(affinity, "The string matching mechanism for id creation has failed", err, w)
+		_ = createBackendError(affinity, "The string matching mechanism for id creation has failed", err, w, rt)
 		return
 	}
 
 	if !match {
-		createFaultyResponse(http.StatusBadRequest, "The username is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not regex-matching username has failed", w)
+		createFaultyResponse(http.StatusBadRequest, "The username is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not regex-matching username has failed", w, rt)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	if len(other_users) > 0 {
-		createFaultyResponse(http.StatusForbidden, "The username tried out is already in use", affinity, "Request encoding for username already in use has failed", w)
+		createFaultyResponse(http.StatusForbidden, "The username tried out is already in use", affinity, "Request encoding for username already in use has failed", w, rt)
 		return
 	}
 
@@ -60,7 +60,7 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	// Inserting the user into the database
 	_, err = rt.db.Insert("users", fmt.Sprintf("('%s', '%s', Null)", id, newUsername.Name))
 	if err != nil {
-		_ = createBackendError(affinity, "Inserting the new user into the database has failed", err, w)
+		_ = createBackendError(affinity, "Inserting the new user into the database has failed", err, w, rt)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (rt *_router) createUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	err = json.NewEncoder(w).Encode(newToken)
 	if err != nil {
-		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w)
+		_ = createBackendError(affinity, "Encoding the new access token has failed", err, w, rt)
 		return
 	}
 }
@@ -87,14 +87,14 @@ func userIdCreator(rt *_router, w http.ResponseWriter) (string, error) {
 		id, _ = reggen.Generate("^[A-Za-z]{16}$", 16)
 		rows, err := rt.db.Select("*", "users", fmt.Sprintf("id = '%s'", id))
 		if err != nil {
-			return "", createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w)
+			return "", createBackendError(affinity, "SELECT in the database seeking users with the same id failed", err, w, rt)
 		}
 
 		// Checking that the new id is unique
 		other_users, err := UsersRowReading(rows)
 
 		if err != nil {
-			return "", createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w)
+			return "", createBackendError(affinity, "Reading the database rows that were seeking users with the same id failed", err, w, rt)
 		} else if len(other_users) == 0 {
 			break
 		}

@@ -1,15 +1,14 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	fmt.Println("Testing the database...")
-	fmt.Println("Test 1: Insertion")
+	rt.baseLogger.Println("Testing the database...")
+	rt.baseLogger.Println("Test 1: Insertion")
 	_, err := rt.db.Insert("users", "('Pippo', 'Paperino', Null)")
 	if err != nil {
 		insertion_error := BackendError{
@@ -17,10 +16,10 @@ func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httpr
 			Message:  "Database insertion test has failed. There might be a problem with string formatting, or insertion formatting",
 			OG_error: err,
 		}
-		fmt.Println(insertion_error.Error())
+		rt.baseLogger.Println(insertion_error.Error())
 	}
 
-	fmt.Println("Test 2: Updating values")
+	rt.baseLogger.Println("Test 2: Updating values")
 	_, err = rt.db.Update("users", "id = 'Pluto'", "1=1")
 	if err != nil {
 		update_error := BackendError{
@@ -28,10 +27,10 @@ func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httpr
 			Message:  "Database update test has failed. There might be a problem with string formatting, or update formatting",
 			OG_error: err,
 		}
-		fmt.Println(update_error.Error())
+		rt.baseLogger.Println(update_error.Error())
 	}
 
-	fmt.Println("Test 3: Selection")
+	rt.baseLogger.Println("Test 3: Selection")
 	selection, err := rt.db.Select("*", "users", "1=1")
 	if err != nil {
 		selection_error := BackendError{
@@ -39,7 +38,7 @@ func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httpr
 			Message:  "Database selection test has failed. There might be a problem with string formatting, or selecton formatting",
 			OG_error: err,
 		}
-		fmt.Println(selection_error.Error())
+		rt.baseLogger.Println(selection_error.Error())
 	}
 	answer, err := UsersRowReading(selection)
 	if err != nil {
@@ -48,11 +47,11 @@ func (rt *_router) testDatabase(w http.ResponseWriter, r *http.Request, ps httpr
 			Message:  "Database reading test has failed. There might be a problem with sql row reading",
 			OG_error: err,
 		}
-		fmt.Println(reading_error.Error())
+		rt.baseLogger.Println(reading_error.Error())
 	} else {
-		fmt.Println("Selected elements are the following:")
+		rt.baseLogger.Println("Selected elements are the following:")
 		for _, el := range answer {
-			fmt.Println(el)
+			rt.baseLogger.Println(el)
 		}
 	}
 
