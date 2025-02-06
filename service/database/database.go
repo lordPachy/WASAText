@@ -43,6 +43,7 @@ type AppDatabase interface {
 	Insert(table string, values string) (sql.Result, error)
 	Update(table string, update string, condition string) (sql.Result, error)
 	Select(columns string, table string, conditions string) (*sql.Rows, error)
+	Filter(columns string, table string, group_by string, conditions string) (*sql.Rows, error)
 }
 
 type appdbimpl struct {
