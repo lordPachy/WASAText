@@ -8,47 +8,50 @@ export default {
 		}
 	},
 	methods: {
-		async refresh() {
+			async refresh() {
+				this.loading = true;
+				this.errormsg = null;
+				try {
+					let response = await this.$axios.get("/");
+					this.games = response.data;
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async conversations() {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				let response = await this.$axios.get("/");
-				this.some_data = response.data;
+				let response = await this.$axios.get("/conversations");
+				this.conversations = response.data;
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
+			this.errormsg = null;
 			this.loading = false;
 		},
-		async login() {
-			try {
-				let response = await this.$axios.put("/session", {
-					params: {
-					// These values should come from the browser
-					// location/GPS or some user input.
-					name: "Paolo",
-					}
-				});
-				// Axios decodes JSON automatically
-				this.token = response.data;
-				} catch (e) {
-				alert("Error: " + e);
-				}
-		}
 	}
 }
 </script>
 
 <template>
-	<!-- when this button is clicked, the list is downloaded -->
-	<button @click="CreateUser">
-		CreateUser
-	</button>
-	<!-- separator -->
-	<hr />
-	<p>User token:</p>
-	<ul>
-		Token: {{ Token }}
-	</ul>
+	<div>
+		<div
+			class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+			<h1 class="h2">WASAText</h1>
+			<div class="btn-toolbar mb-2 mb-md-0">
+				<div class="btn-group me-2">
+					<button type="button" class="btn btn-sm btn-outline-secondary" @click="conversations">
+						Conversations
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+	</div>
 </template>
+
 <style>
 </style>
