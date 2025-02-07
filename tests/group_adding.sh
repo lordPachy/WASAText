@@ -19,7 +19,7 @@ GROUP_ADDING=$(printf '{
 }' "$groupid"| jq -c .)
 printf "FAILED GROUP CHAT ADDING: PAPERONE TRIES ADDING PAPEROGA\n"
 printf "${GROUP_ADDING}\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${paperoneauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups -v
+curl -s --header "Content-Type: application/json" --header "Authentication: ${paperoneauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 GROUP_ADDING=$(printf '{
     "username": {"name": "Paperone"},
@@ -27,7 +27,7 @@ GROUP_ADDING=$(printf '{
 }' "$groupid"| jq -c .)
 printf "GROUP CHAT ADDING: PIPPO ADDS PAPERONE\n"
 printf "${GROUP_ADDING}\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups -v
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 GROUP_ADDING=$(printf '{
     "username": {"name": "Paperoga"},
@@ -35,5 +35,10 @@ GROUP_ADDING=$(printf '{
 }' "$groupid"| jq -c .)
 printf "GROUP CHAT ADDING: PAPERONE ADDS PAPEROGA\n"
 printf "${GROUP_ADDING}\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${paperoneauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups -v
+curl -s --header "Content-Type: application/json" --header "Authentication: ${paperoneauth}" --request PUT --data $GROUP_ADDING http://0.0.0.0:3000/groups
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+groupidnum=$(jq '.id' <<< $groupid) 
+printf "$groupidnum\n"
+printf "GROUP LEAVING BY PAPERONE\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${paperoneauth}" --request DELETE http://0.0.0.0:3000/conversations/$groupidnum
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"

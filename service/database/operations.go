@@ -53,3 +53,17 @@ func (db *appdbimpl) Filter(columns string, table string, group_by string, condi
 
 	return res, err
 }
+
+// It deletes data from a table.
+//
+// Conditions should be in the format col1 = val1, col2 = val2,... colk = valk.
+func (db *appdbimpl) Delete(table string, conditions string) (*sql.Rows, error) {
+	// Actual query
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s", table, conditions)
+	res, err := db.c.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, err
+}
