@@ -87,11 +87,12 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// If it is a group message, we must update the checkmarks table
-	err = groupMessageCheckmarksUpdate(ConversationID{convID}, MessageID{id}, Username{user[1]}, w, rt)
-	if err != nil {
-		return
+	if convID >= 5000 {
+		err = groupMessageCheckmarksUpdate(ConversationID{convID}, MessageID{id}, Username{user[1]}, w, rt)
+		if err != nil {
+			return
+		}
 	}
-
 	// Writing the response in HTTP
 	// Accepted request
 	w.Header().Set("content-type", "text-plain")
@@ -136,7 +137,7 @@ func checkMessageCorrectness(newMessage RequestMessage, rt *_router, w http.Resp
 	if newMessage.ReplyingTo == -1 {
 		replying_to = true
 	} else {
-		replying_to, err = MessageFromIdExists(newMessage.ReplyingTo, rt, w)
+		replying_to, err = MessageFromIdExistence(newMessage.ReplyingTo, rt, w)
 		if err != nil {
 			return false, createBackendError(affinity, "Checking that the message we are replying to's id failed", err, w, rt)
 		}
@@ -156,7 +157,7 @@ func MessageIdCreator(rt *_router, w http.ResponseWriter) (int, error) {
 
 	for {
 		id = rand.Intn(10001)
-		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
+		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = %d", id))
 		if err != nil {
 			return 0, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w, rt)
 		}

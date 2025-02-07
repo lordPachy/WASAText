@@ -17,7 +17,7 @@ func update_messages(convID ConversationID, messageID MessageID, w http.Response
 
 	// Actually writing the conversation in the DB
 	if convID.Id < 5000 {
-		query := fmt.Sprintf("(%d, '%d')", convID.Id, messageID.Id)
+		query := fmt.Sprintf("(%d, %d)", convID.Id, messageID.Id)
 
 		_, err := rt.db.Insert("privmessages", query)
 		if err != nil {
@@ -25,7 +25,7 @@ func update_messages(convID ConversationID, messageID MessageID, w http.Response
 		}
 	} else {
 		// Writing in the database of groups
-		query := fmt.Sprintf("(%d, '%d')", convID.Id, messageID.Id)
+		query := fmt.Sprintf("(%d, %d)", convID.Id, messageID.Id)
 
 		_, err := rt.db.Insert("groupmessages", query)
 		if err != nil {

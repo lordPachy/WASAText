@@ -41,7 +41,7 @@ func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	if !belonging {
-		createFaultyResponse(http.StatusUnauthorized, "The user does not belong to the said group", affinity, "Request for user not belonging to group encoding failed", w, rt)
+		createFaultyResponse(http.StatusForbidden, "The user does not belong to the said group", affinity, "Request for user not belonging to group encoding failed", w, rt)
 		return
 	}
 

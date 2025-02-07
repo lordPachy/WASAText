@@ -83,29 +83,20 @@ func UserFromIDExists(token Access_token, rt *_router, w http.ResponseWriter) (b
 }
 
 // It checks for the existence of a message.
-func MessageFromIdExists(id int, rt *_router, w http.ResponseWriter) (bool, error) {
-	// Logging information
-	const affinity string = "Message existence checking"
-
-	// Querying database rows
-	rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%d'", id))
+func MessageFromIdExistence(id int, rt *_router, w http.ResponseWriter) (bool, error) {
+	chat, err := MessageFromIdRetrieval(id, rt, w)
 	if err != nil {
-		return false, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w, rt)
+		return false, err
 	}
 
-	// Checking the queried rows
-	other_messages, err := MessageRowReading(rows)
-
-	if err != nil {
-		return false, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w, rt)
-	} else if len(other_messages) == 0 {
-		return false, nil
+	if len(chat) > 0 {
+		return true, nil
 	}
 
-	return true, nil
+	return false, nil
 }
 
-// // It check the existence of a chat.
+// It check the existence of a chat.
 func ConversationFromIdExistence(id int, rt *_router, w http.ResponseWriter) (bool, error) {
 	chat, err := ConversationFromIdRetrieval(id, rt, w)
 	if err != nil {
@@ -170,7 +161,7 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 	// Checking that if it is a private conversation
 	if id < 5000 {
 		// SQL query
-		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("id = '%d'", id))
+		rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("id = %d", id))
 		if err != nil {
 			return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w, rt)
 		}
@@ -190,7 +181,7 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 	// It is not a private conversation:
 	// Checking if it is a groupchat conversation
 	// SQL query
-	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", id))
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = %d", id))
 	if err != nil {
 		return nil, createBackendError(affinity, "SELECT in the database seeking conversations with the same id failed", err, w, rt)
 	}
@@ -205,13 +196,34 @@ func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]
 	return chats, nil
 }
 
+// It retrieves a message from the database. Each string element is a row element in the message table.
+func MessageFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Single message retrieval"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = %d", id))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking messages with the same id failed", err, w, rt)
+	}
+
+	// Reading the rows
+	message, err := MessageRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking messages with the same id failed", err, w, rt)
+	}
+
+	return message, nil
+}
+
 // It retrieves the information of a group from the database. Each string element is a row element in the db.
 func GroupInfoFromIdRetrieval(convID ConversationID, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
 	const affinity string = "Group information retrieval"
 
 	// SQL query
-	rows, err := rt.db.Select("*", "groupchats", fmt.Sprintf("id = '%d'", convID.Id))
+	rows, err := rt.db.Select("*", "groupchats", fmt.Sprintf("id = %d", convID.Id))
 	if err != nil {
 		return nil, createBackendError(affinity, "SELECT in the database seeking group infos failed", err, w, rt)
 	}
@@ -292,7 +304,7 @@ func UserBelongsToGroup(token Access_token, groupID ConversationID, rt *_router,
 	username := user[1]
 
 	// SQL query
-	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d' AND member = '%s'", groupID.Id, username))
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = %d AND member = '%s'", groupID.Id, username))
 	if err != nil {
 		return false, createBackendError(affinity, "SELECT in the database seeking group-user matching failed", err, w, rt)
 	}
@@ -313,7 +325,7 @@ func UsersInGroup(groupID ConversationID, rt *_router, w http.ResponseWriter) ([
 	const affinity string = "User of a group retrieving"
 
 	// SQL query
-	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = '%d'", groupID.Id))
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("id = %d", groupID.Id))
 	if err != nil {
 		return nil, createBackendError(affinity, "SELECT in the database seeking group members failed", err, w, rt)
 	}

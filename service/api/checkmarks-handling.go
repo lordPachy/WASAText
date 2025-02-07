@@ -48,7 +48,7 @@ func receivedCheckmarksUpdate(user Username, w http.ResponseWriter, rt *_router)
 	// Group messages update
 	query := fmt.Sprintf("member = '%s' AND checkmarks = 0", user.Name)
 
-	_, err := rt.db.Update("groupmessageschecks", query, "checkmarks = 1")
+	_, err := rt.db.Update("groupmessageschecks", "checkmarks = 1", query)
 	if err != nil {
 		_ = createBackendError(affinity, "Updating group message checkmarks into the database has failed", err, w, rt)
 		return err
@@ -63,7 +63,7 @@ func receivedCheckmarksUpdate(user Username, w http.ResponseWriter, rt *_router)
 	for _, mess := range recv_messages {
 		query = fmt.Sprintf("id = %s AND checkmarks = 0", mess)
 
-		_, err := rt.db.Update("messages", query, "checkmarks = 1")
+		_, err := rt.db.Update("messages", "checkmarks = 1", query)
 		if err != nil {
 			_ = createBackendError(affinity, "Updating group messages checkmarks into the database has failed", err, w, rt)
 			return err
@@ -78,9 +78,9 @@ func receivedCheckmarksUpdate(user Username, w http.ResponseWriter, rt *_router)
 
 	for _, mess := range messageids {
 		// We need to update messages received by the user, not the ones sent
-		query = fmt.Sprintf("sender NOT IN ('%s') AND id = %s AND checkmarks = 0", user.Name, mess)
+		query = fmt.Sprintf("sender != '%s' AND id = %s AND checkmarks = 0", user.Name, mess)
 
-		_, err := rt.db.Update("messages", query, "checkmarks = 1")
+		_, err := rt.db.Update("messages", "checkmarks = 1", query)
 		if err != nil {
 			_ = createBackendError(affinity, "Updating private message checkmarks into the database has failed", err, w, rt)
 			return err
@@ -102,7 +102,7 @@ func readCheckmarksUpdate(user Username, convID ConversationID, w http.ResponseW
 	if convID.Id >= 5000 {
 		// Group messages update
 		query := fmt.Sprintf("groupid = %d AND member = '%s' AND checkmarks < 2", convID.Id, user.Name)
-		_, err := rt.db.Update("groupmessageschecks", query, "checkmarks = 2")
+		_, err := rt.db.Update("groupmessageschecks", "checkmarks = 2", query)
 		if err != nil {
 			_ = createBackendError(affinity, "Updating group message checkmarks into the database has failed", err, w, rt)
 			return err
@@ -117,7 +117,7 @@ func readCheckmarksUpdate(user Username, convID ConversationID, w http.ResponseW
 		for _, mess := range recv_messages {
 			query = fmt.Sprintf("id = %s AND checkmarks < 2", mess)
 
-			_, err := rt.db.Update("messages", query, "checkmarks = 2")
+			_, err := rt.db.Update("messages", "checkmarks = 2", query)
 			if err != nil {
 				_ = createBackendError(affinity, "Updating group messages checkmarks into the database has failed", err, w, rt)
 				return err
@@ -135,7 +135,7 @@ func readCheckmarksUpdate(user Username, convID ConversationID, w http.ResponseW
 			// We need to update messages received by the user, not the ones sent
 			query := fmt.Sprintf("sender NOT IN ('%s') AND id = %s AND checkmarks < 2", user.Name, mess)
 
-			_, err := rt.db.Update("messages", query, "checkmarks = 2")
+			_, err := rt.db.Update("messages", "checkmarks = 2", query)
 			if err != nil {
 				_ = createBackendError(affinity, "Updating private message checkmarks into the database has failed", err, w, rt)
 				return err
