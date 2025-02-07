@@ -39,7 +39,14 @@ printf "MESSAGE DELETING FROM PIPPO \n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request DELETE http://0.0.0.0:3000/conversations/$groupid/messages/$pippomessid -v
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT COMMMENT TO 2\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request PUT --data '{"reaction":"thumbs_up"}' http://0.0.0.0:3000/conversations/$groupid/messages/$topolinomessid -v
+commentid="$(curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request PUT --data '{"reaction":"thumbs_up"}' http://0.0.0.0:3000/conversations/$groupid/messages/$topolinomessid | jq -r '.commentid')"
+printf "Comment id is $commentid\n"
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT RETRIEVAL FROM PIPPO \n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT COMMMENT DELETING TO 2\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request DELETE http://0.0.0.0:3000/conversations/$groupid/messages/$topolinomessid/comments/$commentid -v
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT RETRIEVAL FROM PIPPO \n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid
