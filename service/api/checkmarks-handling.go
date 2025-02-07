@@ -72,7 +72,7 @@ func receivedCheckmarksUpdate(user Username, w http.ResponseWriter, rt *_router)
 	}
 
 	// Private messages update
-	messageids, err := MessagesFromPrivateConvo(user, rt, w)
+	messageids, err := MessageIdsFromPrivateConvo(user, rt, w)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func readCheckmarksUpdate(user Username, convID ConversationID, w http.ResponseW
 
 	} else {
 		// Private messages update
-		messageids, err := MessagesFromPrivateConvo(user, rt, w)
+		messageids, err := MessageIdsFromPrivateConvo(user, rt, w)
 		if err != nil {
 			return err
 		}
