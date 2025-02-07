@@ -19,18 +19,8 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	const affinity string = "Message sending"
 
 	// Checking that the conversation actually exists
-	convID, err := strconv.Atoi(ps.ByName("conversationid"))
-	if err != nil {
-		_ = createBackendError(affinity, "Conversation retrieval has failed", err, w, rt)
-		return
-	}
-
-	exists, err := ConversationFromIdExistence(convID, rt, w)
-	if err != nil {
-		return
-	}
-	if !exists {
-		createFaultyResponse(http.StatusNotFound, "Conversation not found", affinity, "Response message encoding for conversation not found error has failed", w, rt)
+	convID, err := conversationRetrieval(affinity, w, ps, rt)
+	if err != nil || convID == -1 {
 		return
 	}
 

@@ -839,15 +839,27 @@ components:
       properties:
         chatid:
           $ref: '#/components/schemas/ConversationID'
-        user:
-          $ref: '#/components/schemas/User'
+        groupname:
+          type: string
+          description: Name of the group
+          pattern: ^[\w\ ]{3,16}$
+          minLength: 3
+          maxLength: 16
+          example: Family
+        groupphoto:
+          type: string
+          description: Photo of the group
+          format: binary
+          pattern: ^0b[01]{1,14}$
+          minLength: 3
+          maxLength: 16
+          example: "0b00010010100"
         lastmessage:
           $ref: '#/components/schemas/Message'
       example:
         chatid: 50
-        user:
-          username: Fabio
-          propic: "0b00010010100"
+        groupname: Family
+        groupphoto: "0b00010010100"
         lastmessage:
           messageid: 1
           timestamp: "2017-07-21T17:32:28Z"

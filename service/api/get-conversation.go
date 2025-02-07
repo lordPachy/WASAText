@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -16,15 +15,8 @@ func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps ht
 	const affinity string = "Getting conversation"
 
 	// Checking that the conversation actually exists
-	isThere, err := conversationRetrieval(affinity, w, ps, rt)
-	if !isThere || err != nil {
-		return
-	}
-
-	// Retrieving conversation id
-	convIDValue, err := strconv.Atoi(ps.ByName("conversationid"))
-	if err != nil {
-		_ = createBackendError(affinity, "Conversation id conversion failed", err, w, rt)
+	convIDValue, err := conversationRetrieval(affinity, w, ps, rt)
+	if convIDValue == -1 || err != nil {
 		return
 	}
 	convID := ConversationID{convIDValue}

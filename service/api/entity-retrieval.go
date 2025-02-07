@@ -8,21 +8,21 @@ import (
 )
 
 // It checks if a single conversation exists.
-func conversationRetrieval(affinity string, w http.ResponseWriter, ps httprouter.Params, rt *_router) (bool, error) {
+func conversationRetrieval(affinity string, w http.ResponseWriter, ps httprouter.Params, rt *_router) (int, error) {
 	// Checking that the conversation actually exists
 	convID, err := strconv.Atoi(ps.ByName("conversationid"))
 	if err != nil {
-		return false, createBackendError(affinity, "Conversation id conversion failed", err, w, rt)
+		return convID, createBackendError(affinity, "Conversation id conversion failed", err, w, rt)
 	}
 
 	exists, err := ConversationFromIdExistence(convID, rt, w)
 	if err != nil {
-		return false, err
+		return convID, err
 	}
 	if !exists {
 		createFaultyResponse(http.StatusNotFound, "Conversation not found", affinity, "Response message encoding for conversation not found error has failed", w, rt)
-		return false, nil
+		return -1, nil
 	}
 
-	return true, nil
+	return convID, nil
 }
