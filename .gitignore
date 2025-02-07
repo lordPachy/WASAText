@@ -7,3 +7,8 @@ doc/results.html
 service/database/database.db
 cmd/webapi/register-web-ui.go
 webui
+.golangci.yml
+open-node.sh
+package.json
+package-lock.json
+webapi
