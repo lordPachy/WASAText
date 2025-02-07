@@ -36,6 +36,10 @@ type ConversationID struct {
 	Id int `json:"id"`
 }
 
+type GroupName struct {
+	Value string `json:"value"`
+}
+
 type AddToGroupRequest struct {
 	User  Username       `json:"username"`
 	Group ConversationID `json:"group"`
