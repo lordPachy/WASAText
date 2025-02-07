@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "axios": "^1.7.9",
     "cli.js": "^1.0.2",
     "golangci-lint": "^0.0.2",
     "index.js": "^0.0.3"
