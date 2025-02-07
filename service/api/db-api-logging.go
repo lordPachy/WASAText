@@ -505,15 +505,17 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 			return nil, createBackendError(affinity, "Reading the database rows that were seeking messages from id failed", err, w, rt)
 		}
 
-		// Creating the result message
-		// THIS MUST BE CHANGED WITH REAL COMMENTS
-		var emptyComments []Comment
-
 		// Converting results into the correct formats
 		msgid, err := strconv.Atoi(queriedrows[0])
 		if err != nil {
 			return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
 		}
+
+		comments, err := CommentsFromMessage(MessageID{msgid}, rt, w)
+		if err != nil {
+			return nil, err
+		}
+
 		checkmarks, err := strconv.Atoi(queriedrows[5])
 		if err != nil {
 			return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
@@ -537,7 +539,7 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 			Photo:      queriedrows[4],
 			Username:   queriedrows[1],
 			Checkmarks: checkmarks,
-			Comments:   emptyComments,
+			Comments:   comments,
 			ReplyingTo: replyingid,
 		}
 
@@ -600,7 +602,6 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 			}
 		} else {
 			// Creating the result message
-			// THIS MUST BE CHANGED WITH REAL COMMENTS
 			var emptyComments []Comment
 
 			// Converting results into the correct formats
@@ -647,11 +648,11 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 }
 
 // It returns a list of comments from a message. It assumes the message exists.
-func CommentsFromMessage(messID MessageID, rt *_router, w http.ResponseWriter) ([]Message, error) {
+func CommentsFromMessage(messID MessageID, rt *_router, w http.ResponseWriter) ([]Comment, error) {
 	// Logging information
 	const affinity string = "Comments from message retrieving"
 
-	// SQL query #1: retrieving message ids off the chat
+	// SQL query #1: retrieving comment ids off the message
 	rows, err := rt.db.Select("*", "messagecomments", fmt.Sprintf("id = %d", messID.Id))
 	if err != nil {
 		return nil, createBackendError(affinity, "SELECT in the database seeking message comments failed", err, w, rt)
@@ -672,7 +673,7 @@ func CommentsFromMessage(messID MessageID, rt *_router, w http.ResponseWriter) (
 	}
 
 	// SQL query #2: retrieving comments
-	comments := make([]Message, len(commentids))
+	comments := make([]Comment, len(commentids))
 	for i, id := range commentids {
 		rows, err := rt.db.Select("*", "comments", fmt.Sprintf("id = %s", id))
 		if err != nil {
@@ -686,43 +687,43 @@ func CommentsFromMessage(messID MessageID, rt *_router, w http.ResponseWriter) (
 		}
 
 		// Creating the result message
-		// THIS MUST BE CHANGED WITH REAL COMMENTS
-		var emptyComments []Comment
 
 		// Converting results into the correct formats
-		msgid, err := strconv.Atoi(queriedrows[0])
+		cmtid, err := strconv.Atoi(queriedrows[0])
 		if err != nil {
-			return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
-		}
-		checkmarks, err := strconv.Atoi(queriedrows[5])
-		if err != nil {
-			return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
+			return nil, createBackendError(affinity, "Comment id conversion to int failed", err, w, rt)
 		}
 
-		var replyingid int
-		if queriedrows[6] != nullValue {
-			replyingid, err = strconv.Atoi(queriedrows[6])
-			if err != nil {
-				return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
-			}
-		} else {
-			replyingid = -1
+		// Packing everything into a comment
+		tmpComment := Comment{
+			CommentID: cmtid,
+			Sender:    queriedrows[1],
+			Reaction:  queriedrows[2],
 		}
 
-		// Packing everything into a message
-		tmpMessage := Message{
-			MessageID:  msgid,
-			Timestamp:  queriedrows[2],
-			Content:    queriedrows[3],
-			Photo:      queriedrows[4],
-			Username:   queriedrows[1],
-			Checkmarks: checkmarks,
-			Comments:   emptyComments,
-			ReplyingTo: replyingid,
-		}
-
-		messages[i] = tmpMessage
+		comments[i] = tmpComment
 	}
 
-	return messages, nil
+	return comments, nil
+}
+
+// It retrieves a comment from the database. Each string element is a row element in the comments table.
+func CommentFromIdRetrieval(commentID CommentID, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Single comment retrieval"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "comments", fmt.Sprintf("id = %d", commentID.CommentID))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking comments with the same id failed", err, w, rt)
+	}
+
+	// Reading the rows
+	comment, err := CommentsRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking comments with the same id failed", err, w, rt)
+	}
+
+	return comment, nil
 }

@@ -38,6 +38,9 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "MESSAGE DELETING FROM PIPPO \n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request DELETE http://0.0.0.0:3000/conversations/$groupid/messages/$pippomessid -v
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT COMMMENT TO 2\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request PUT --data '{"reaction":"thumbs_up"}' http://0.0.0.0:3000/conversations/$groupid/messages/$topolinomessid -v
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT RETRIEVAL FROM PIPPO \n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"

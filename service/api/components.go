@@ -71,7 +71,6 @@ type Comment struct {
 	CommentID int    `json:"commentid"`
 	Sender    string `json:"sender"`
 	Reaction  string `json:"reaction"`
-	SentByMe  bool   `json:"sentbyme"`
 }
 
 type CommentRequest struct {

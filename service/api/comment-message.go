@@ -89,7 +89,6 @@ func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, ps htt
 		CommentID: id,
 		Sender:    user[1],
 		Reaction:  newComment.Reaction,
-		SentByMe:  true,
 	}
 	err = json.NewEncoder(w).Encode(responseComment)
 	if err != nil {
