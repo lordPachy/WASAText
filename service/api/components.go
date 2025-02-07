@@ -63,11 +63,19 @@ type Access_token struct {
 	Identifier string `json:"identifier"`
 }
 
+type CommentID struct {
+	CommentID int `json:"commentid"`
+}
+
 type Comment struct {
 	CommentID int    `json:"commentid"`
 	Sender    string `json:"sender"`
 	Reaction  string `json:"reaction"`
 	SentByMe  bool   `json:"sentbyme"`
+}
+
+type CommentRequest struct {
+	Reaction string `json:"reaction"`
 }
 
 // Message sent with HTTP request

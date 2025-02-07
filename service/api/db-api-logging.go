@@ -435,7 +435,7 @@ func MessageIdsFromPrivateConvo(user Username, rt *_router, w http.ResponseWrite
 	// SQL query #2: retrieving messages sent on chat where the user is present
 	var message_ids []string
 	for _, id := range ids {
-		rows, err := rt.db.Select("*", "privmessages", fmt.Sprintf("id = '%s'", id))
+		rows, err := rt.db.Select("*", "privmessages", fmt.Sprintf("id = %s", id))
 		if err != nil {
 			return nil, createBackendError(affinity, "SELECT in the database seeking message ids from chat id failed", err, w, rt)
 		}
@@ -494,7 +494,7 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 	// SQL query #2: retrieving messages sent on chat
 	messages := make([]Message, len(messageids))
 	for i, id := range messageids {
-		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%s'", id))
+		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = %s", id))
 		if err != nil {
 			return nil, createBackendError(affinity, "SELECT in the database seeking messages from id failed", err, w, rt)
 		}
@@ -583,7 +583,7 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 	// SQL query #2: retrieving last message sent on chat
 	messages := make([]Message, 0, 1)
 	for _, id := range messageids {
-		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%s'", id))
+		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = %s", id))
 		if err != nil {
 			return nil, createBackendError(affinity, "SELECT in the database seeking last message from id failed", err, w, rt)
 		}
@@ -641,6 +641,87 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 				messages = append(messages, tmpMessage)
 			}
 		}
+	}
+
+	return messages, nil
+}
+
+// It returns a list of comments from a message. It assumes the message exists.
+func CommentsFromMessage(messID MessageID, rt *_router, w http.ResponseWriter) ([]Message, error) {
+	// Logging information
+	const affinity string = "Comments from message retrieving"
+
+	// SQL query #1: retrieving message ids off the chat
+	rows, err := rt.db.Select("*", "messagecomments", fmt.Sprintf("id = %d", messID.Id))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking message comments failed", err, w, rt)
+	}
+
+	// Reading the rows
+	rawcomments, err := MessageCommentsRowReading(rows)
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking message comments failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not comment ids
+	var commentids []string
+	for i, id := range rawcomments {
+		if i%2 == 1 {
+			commentids = append(commentids, id)
+		}
+	}
+
+	// SQL query #2: retrieving comments
+	comments := make([]Message, len(commentids))
+	for i, id := range commentids {
+		rows, err := rt.db.Select("*", "comments", fmt.Sprintf("id = %s", id))
+		if err != nil {
+			return nil, createBackendError(affinity, "SELECT in the database seeking comments from id failed", err, w, rt)
+		}
+
+		// Reading the rows
+		queriedrows, err := CommentsRowReading(rows)
+		if err != nil {
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking comments from id failed", err, w, rt)
+		}
+
+		// Creating the result message
+		// THIS MUST BE CHANGED WITH REAL COMMENTS
+		var emptyComments []Comment
+
+		// Converting results into the correct formats
+		msgid, err := strconv.Atoi(queriedrows[0])
+		if err != nil {
+			return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
+		}
+		checkmarks, err := strconv.Atoi(queriedrows[5])
+		if err != nil {
+			return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
+		}
+
+		var replyingid int
+		if queriedrows[6] != nullValue {
+			replyingid, err = strconv.Atoi(queriedrows[6])
+			if err != nil {
+				return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
+			}
+		} else {
+			replyingid = -1
+		}
+
+		// Packing everything into a message
+		tmpMessage := Message{
+			MessageID:  msgid,
+			Timestamp:  queriedrows[2],
+			Content:    queriedrows[3],
+			Photo:      queriedrows[4],
+			Username:   queriedrows[1],
+			Checkmarks: checkmarks,
+			Comments:   emptyComments,
+			ReplyingTo: replyingid,
+		}
+
+		messages[i] = tmpMessage
 	}
 
 	return messages, nil

@@ -35,3 +35,25 @@ func update_messages(convID ConversationID, messageID MessageID, w http.Response
 
 	return nil
 }
+
+/*
+It uploads a comment on a private chat or a group.
+Since this function gets called only in other functions, it is assumed
+that the sender actually belongs to the chat/group, that the chat/group
+exists, and that the id message is valid and corresponds to a real message
+just as the comment's.
+*/
+func update_comments(comment CommentID, messageID MessageID, w http.ResponseWriter, rt *_router) error {
+	// Logging information
+	const affinity string = "Comment table updating"
+
+	// Actually writing the comment in the DB
+	query := fmt.Sprintf("(%d, %d)", messageID.Id, comment.CommentID)
+
+	_, err := rt.db.Insert("messagecomments", query)
+	if err != nil {
+		return createBackendError(affinity, "Inserting the new comment into the database of comments per message has failed", err, w, rt)
+	}
+
+	return nil
+}
