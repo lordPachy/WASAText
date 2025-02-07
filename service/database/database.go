@@ -44,6 +44,7 @@ type AppDatabase interface {
 	Update(table string, update string, condition string) (sql.Result, error)
 	Select(columns string, table string, conditions string) (*sql.Rows, error)
 	Filter(columns string, table string, group_by string, conditions string) (*sql.Rows, error)
+	Delete(table string, conditions string) (*sql.Rows, error)
 }
 
 type appdbimpl struct {
