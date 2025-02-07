@@ -5,3 +5,5 @@ doc/package-lock.json
 doc/package.json
 doc/results.html
 service/database/database.db
+cmd/webapi/register-web-ui.go
+webui
