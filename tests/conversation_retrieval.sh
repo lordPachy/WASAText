@@ -15,12 +15,18 @@ printf "GROUP CHAT CREATION\n"
 groupid="$(curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request PUT --data '{"isgroup":true, "members":[{"name":"Topolino"}], "groupname": "Eccehomo"}' http://0.0.0.0:3000/conversations | jq '.id')"
 printf "$groupid\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "GROUP CHAT MESSAGE\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request POST --data '{"content":"Hi, Im Pippo", "replyingto":-1}' http://0.0.0.0:3000/conversations/$groupid -v
+printf "GROUP CHAT MESSAGE 1\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request POST --data '{"content":"Hi, Im Pippo", "replyingto":-1}' http://0.0.0.0:3000/conversations/$groupid
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT MESSAGE 2\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request POST --data '{"content":"Hi, Im Topolino", "replyingto":-1}' http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT RETRIEVAL FROM TOPOLINO\n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid -v
+curl -s --header "Content-Type: application/json" --header "Authentication: ${topolinoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT RETRIEVAL FROM PIPPO \n"
-curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid -v
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations/$groupid
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "CONVERSATIONS RETRIEVAL FROM PIPPO \n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations -v
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"

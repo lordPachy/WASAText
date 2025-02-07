@@ -48,14 +48,14 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 		convID = ConversationID{rawid}
 
 		// Getting last message
-		lastmessage, err := LastMessageFromConvo(convID, rt, w)
+		lastmessages, err := LastMessageFromConvo(convID, rt, w)
 		if err != nil {
 			return
 		}
 		// Since conversations are created before the first message is sent, there might be no sent message for the user
-		if len(lastmessage) == 0 {
+		if len(lastmessages) == 0 {
 			var emptyComments []Comment
-			lastmessage[0] = Message{
+			lastmessage := Message{
 				MessageID:  0,
 				Timestamp:  "",
 				Content:    "",
@@ -65,6 +65,8 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 				Comments:   emptyComments,
 				ReplyingTo: -1,
 			}
+
+			lastmessages = append(lastmessages, lastmessage)
 		}
 
 		// Adding the actual recipient, being careful it is not the requesting user itself
@@ -88,7 +90,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 		chatpreview := ChatPreview{
 			ChatID:      convID,
 			User:        user,
-			LastMessage: lastmessage[0],
+			LastMessage: lastmessages[0],
 		}
 		privchats = append(privchats, chatpreview)
 
@@ -111,14 +113,14 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 		convID = ConversationID{rawid}
 
 		// Getting last message
-		lastmessage, err := LastMessageFromConvo(convID, rt, w)
+		lastmessages, err := LastMessageFromConvo(convID, rt, w)
 		if err != nil {
 			return
 		}
 		// Since conversations are created before the first message is sent, there might be no sent message for the user
-		if len(lastmessage) == 0 {
+		if len(lastmessages) == 0 {
 			var emptyComments []Comment
-			lastmessage[0] = Message{
+			lastmessage := Message{
 				MessageID:  0,
 				Timestamp:  "",
 				Content:    "",
@@ -128,6 +130,8 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 				Comments:   emptyComments,
 				ReplyingTo: -1,
 			}
+
+			lastmessages = append(lastmessages, lastmessage)
 		}
 
 		// Getting group info
@@ -140,7 +144,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 			ChatID:      convID,
 			Groupname:   info[1],
 			Groupphoto:  info[2],
-			LastMessage: lastmessage[0],
+			LastMessage: lastmessages[0],
 		}
 
 		groupchats = append(groupchats, groupPreview)

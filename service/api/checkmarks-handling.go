@@ -26,7 +26,6 @@ func groupMessageCheckmarksUpdate(groupID ConversationID, messageID MessageID, u
 			continue
 		}
 		query := fmt.Sprintf("(%d, %d, '%s', %d)", groupID.Id, messageID.Id, el, 0)
-		rt.baseLogger.Println(query)
 		_, err = rt.db.Insert("groupmessageschecks", query)
 		if err != nil {
 			_ = createBackendError(affinity, "Inserting group message checkmarks into the database has failed", err, w, rt)
@@ -111,7 +110,6 @@ func readCheckmarksUpdate(user Username, convID ConversationID, w http.ResponseW
 
 		// Rendering group messages as received if they are received by everyone
 		recv_messages, err := ReadGroupMessages(rt, w)
-		rt.baseLogger.Println(recv_messages)
 		if err != nil {
 			return err
 		}
