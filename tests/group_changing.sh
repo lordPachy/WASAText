@@ -18,6 +18,9 @@ groupidnum=$(jq '.id' <<< $groupid)
 printf "Group id num is: $groupidnum\n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request PUT --data '{"value":"Eccepippo"}' http://0.0.0.0:3000/conversations/$groupidnum/settings/groupname
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "GROUP CHAT PHOTO CHANGING BY PIPPO\n"
+curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request PUT --data '{"value":"0b00010010100"}' http://0.0.0.0:3000/conversations/$groupidnum/settings/groupphoto
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "CONVERSATIONS RETRIEVAL FROM PIPPO \n"
 curl -s --header "Content-Type: application/json" --header "Authentication: ${pippoauth}" --request GET http://0.0.0.0:3000/conversations
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
