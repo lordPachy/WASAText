@@ -59,6 +59,12 @@ func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, ps h
 		return
 	}
 
+	// Completing deletion
+	_, err = CommentsRowReading(rows)
+	if err != nil {
+		return
+	}
+
 	// Writing the response in HTTP
 	// Accepted request
 	w.Header().Set("content-type", "text-plain")

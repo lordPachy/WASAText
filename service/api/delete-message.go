@@ -51,10 +51,15 @@ func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps http
 
 	// Deleting message from the DB
 	query := fmt.Sprintf("id = %d", messID)
-
 	rows, err := rt.db.Delete("messages", query)
 	if err != nil || rows.Err() != nil {
 		_ = createBackendError(affinity, "Deleting message from the database has failed", err, w, rt)
+		return
+	}
+
+	// Completing deletion
+	_, err = MessageRowReading(rows)
+	if err != nil {
 		return
 	}
 
