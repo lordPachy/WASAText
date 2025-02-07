@@ -248,6 +248,72 @@ func MessageRowReading(res *sql.Rows) ([]string, error) {
 	return answer, nil
 }
 
+// It retrieves comments from sql's queried rows.
+func CommentsRowReading(res *sql.Rows) ([]string, error) {
+	// Retrieving the values from rows
+	var answer []string // array of actual values
+	var id, sender, reaction *string
+	for {
+		if res.Next() { // there is another value to be scanned
+			err := res.Scan(&id, &sender, &reaction)
+			if err == nil {
+				answer = append(answer, *id, *sender, *reaction)
+			} else {
+				return nil, err // the scan has had an error
+			}
+		} else {
+			if res.Err() == nil { // there are no more values to scan in the current set
+				if res.NextResultSet() { // there are values to be scanned
+					continue // in the next set
+				} else {
+					if res.Err() == nil { // there are no more values, and the scan can end
+						break
+					} else { // next set scan went unsuccessfully
+						return nil, res.Err()
+					}
+				}
+			} else { // next scan went unsuccessfully
+				return nil, res.Err()
+			}
+		}
+	}
+
+	return answer, nil
+}
+
+// It retrieves message and comments from sql's queried rows.
+func MessageCommentsRowReading(res *sql.Rows) ([]string, error) {
+	// Retrieving the values from rows
+	var answer []string // array of actual values
+	var id, commentid *string
+	for {
+		if res.Next() { // there is another value to be scanned
+			err := res.Scan(&id, &commentid)
+			if err == nil {
+				answer = append(answer, *id, *commentid)
+			} else {
+				return nil, err // the scan has had an error
+			}
+		} else {
+			if res.Err() == nil { // there are no more values to scan in the current set
+				if res.NextResultSet() { // there are values to be scanned
+					continue // in the next set
+				} else {
+					if res.Err() == nil { // there are no more values, and the scan can end
+						break
+					} else { // next set scan went unsuccessfully
+						return nil, res.Err()
+					}
+				}
+			} else { // next scan went unsuccessfully
+				return nil, res.Err()
+			}
+		}
+	}
+
+	return answer, nil
+}
+
 // It retrieves group information from sql's queried rows.
 func GroupInfoRowReading(res *sql.Rows) ([]string, error) {
 	// Retrieving the values from rows
