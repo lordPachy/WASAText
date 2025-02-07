@@ -46,3 +46,23 @@ func messageRetrieval(affinity string, w http.ResponseWriter, ps httprouter.Para
 
 	return messID, nil
 }
+
+// It checks if a single comment exists.
+func commentRetrieval(affinity string, w http.ResponseWriter, ps httprouter.Params, rt *_router) ([]string, error) {
+	// Checking that the comment actually exists
+	commID, err := strconv.Atoi(ps.ByName("commentid"))
+	if err != nil {
+		return nil, createBackendError(affinity, "Comment id conversion failed", err, w, rt)
+	}
+
+	exists, err := CommentFromIdRetrieval(CommentID{commID}, rt, w)
+	if err != nil {
+		return nil, err
+	}
+	if len(exists) == 0 {
+		createFaultyResponse(http.StatusNotFound, "Comment not found", affinity, "Response message encoding for comment not found error has failed", w, rt)
+		return []string{}, nil
+	}
+
+	return exists, nil
+}
