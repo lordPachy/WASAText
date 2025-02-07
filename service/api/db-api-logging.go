@@ -378,7 +378,6 @@ func ReadGroupMessages(rt *_router, w http.ResponseWriter) ([]string, error) {
 
 	// Reading the rows
 	retrievedRows, err := GroupmessageschecksRowReading(rows)
-	rt.baseLogger.Println(retrievedRows)
 
 	if err != nil {
 		return nil, createBackendError(affinity, "Reading the database rows that were seeking read group messages failed", err, w, rt)
