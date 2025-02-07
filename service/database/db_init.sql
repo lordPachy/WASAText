@@ -1,5 +1,3 @@
-PRAGMA foreign_keys = ON;
-
 -- Cleaning up the database
 PRAGMA writable_schema = 1;
 DELETE FROM sqlite_master;
