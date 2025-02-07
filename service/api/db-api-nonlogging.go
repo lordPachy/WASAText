@@ -19,6 +19,10 @@ It retrieves values from rows that should contain users.
 This function passes errors without handling them.
 */
 
+// Null value for database
+
+const nullValue string = "Null"
+
 // It returns a proper date-time-formatted string.
 func GetTime() string {
 	currentTime := time.Now()
@@ -42,7 +46,7 @@ func UsersRowReading(res *sql.Rows) ([]string, error) {
 			err := res.Scan(&id, &username, &propic)
 			if err == nil {
 				if propic == nil {
-					tmp := "Null"
+					tmp := nullValue
 					propic = &tmp
 				}
 				answer = append(answer, *id, *username, *propic)
@@ -136,7 +140,7 @@ func PrivchatsRowReading(res *sql.Rows) ([]string, error) {
 }
 
 // It retrieves private messages from sql's queried rows.
-func PrivmessagesRowReading(res *sql.Rows) ([]string, error) {
+func ChatmessagesRowReading(res *sql.Rows) ([]string, error) {
 	// Retrieving the values from rows
 	var answer []string // array of actual values
 	var id, messageID *string
@@ -210,7 +214,7 @@ func MessageRowReading(res *sql.Rows) ([]string, error) {
 		if res.Next() { // there is another value to be scanned
 			err := res.Scan(&id, &sender, &created_at, &content, &photo, &checkmarks, &replying_to)
 			if err == nil {
-				tmp := "Null"
+				tmp := nullValue
 				if content == nil {
 					content = &tmp
 				}
@@ -221,6 +225,43 @@ func MessageRowReading(res *sql.Rows) ([]string, error) {
 					replying_to = &tmp
 				}
 				answer = append(answer, *id, *sender, *created_at, *content, *photo, *checkmarks, *replying_to)
+			} else {
+				return nil, err // the scan has had an error
+			}
+		} else {
+			if res.Err() == nil { // there are no more values to scan in the current set
+				if res.NextResultSet() { // there are values to be scanned
+					continue // in the next set
+				} else {
+					if res.Err() == nil { // there are no more values, and the scan can end
+						break
+					} else { // next set scan went unsuccessfully
+						return nil, res.Err()
+					}
+				}
+			} else { // next scan went unsuccessfully
+				return nil, res.Err()
+			}
+		}
+	}
+
+	return answer, nil
+}
+
+// It retrieves group information from sql's queried rows.
+func GroupInfoRowReading(res *sql.Rows) ([]string, error) {
+	// Retrieving the values from rows
+	var answer []string // array of actual values
+	var id, groupname, groupphoto *string
+	for {
+		if res.Next() { // there is another value to be scanned
+			err := res.Scan(&id, &groupname, &groupphoto)
+			if err == nil {
+				tmp := nullValue
+				if groupphoto == nil {
+					groupphoto = &tmp
+				}
+				answer = append(answer, *id, *groupname, *groupphoto)
 			} else {
 				return nil, err // the scan has had an error
 			}

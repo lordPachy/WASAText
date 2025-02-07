@@ -66,3 +66,17 @@ type Message struct {
 	Comments   []Comment `json:"comments"`
 	ReplyingTo int       `json:"replyingto"`
 }
+
+type Chat struct {
+	ConversationID ConversationID `json:"conversationid"`
+	User           User           `json:"user"`
+	Messages       []Message      `json:"messages"`
+}
+
+type Group struct {
+	ConversationID ConversationID `json:"conversationid"`
+	Members        []User         `json:"members"`
+	Messages       []Message      `json:"messages"`
+	Groupname      string         `json:"groupname"`
+	Groupphoto     string         `json:"groupphoto"`
+}
