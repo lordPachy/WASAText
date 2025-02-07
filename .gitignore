@@ -10,4 +10,4 @@ webui
 open-node.sh
 package.json
 package-lock.json
-webapi
+cmd/webapi/register-web-ui.go
