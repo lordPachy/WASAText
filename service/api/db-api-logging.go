@@ -119,6 +119,49 @@ func ConversationFromIdExistence(id int, rt *_router, w http.ResponseWriter) (bo
 	return false, nil
 }
 
+// It retrieves the list of private conversations for a user from the database. Each string element is a row element in the privchats table.
+func PrivConversationsFromUsernameRetrieval(user Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Private conversations retrieval"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "privchats", fmt.Sprintf("member1 = '%s' OR member2 = '%s'", user.Name, user.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking conversations of a user failed", err, w, rt)
+	}
+
+	// Reading the rows
+	chats, err := PrivchatsRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking conversations of a user failed", err, w, rt)
+	}
+
+	return chats, nil
+
+}
+
+// It retrieves the list of group conversations for a user from the database. Each string element is a row element in the groupmembers table.
+func GroupConversationsFromUsernameRetrieval(user Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "Group conversations retrieval"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "groupmembers", fmt.Sprintf("member = '%s'", user.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking groups of a user failed", err, w, rt)
+	}
+
+	// Reading the rows
+	chats, err := GroupMembersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking groups of a user failed", err, w, rt)
+	}
+
+	return chats, nil
+}
+
 // It retrieves a conversation from the database. Each string element is a row element in the db.
 func ConversationFromIdRetrieval(id int, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information
@@ -335,6 +378,7 @@ func ReadGroupMessages(rt *_router, w http.ResponseWriter) ([]string, error) {
 
 	// Reading the rows
 	retrievedRows, err := GroupmessageschecksRowReading(rows)
+	rt.baseLogger.Println(retrievedRows)
 
 	if err != nil {
 		return nil, createBackendError(affinity, "Reading the database rows that were seeking read group messages failed", err, w, rt)
@@ -436,7 +480,7 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 		}
 	}
 
-	// SQL query #2: retrieving messages sent on chat where the user is present
+	// SQL query #2: retrieving messages sent on chat
 	messages := make([]Message, len(messageids))
 	for i, id := range messageids {
 		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%s'", id))
@@ -463,24 +507,129 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 		if err != nil {
 			return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
 		}
-		replyingid, err := strconv.Atoi(queriedrows[6])
-		if err != nil {
-			return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
+
+		var replyingid int
+		if queriedrows[6] != nullValue {
+			replyingid, err = strconv.Atoi(queriedrows[6])
+			if err != nil {
+				return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
+			}
+		} else {
+			replyingid = -1
 		}
 
 		// Packing everything into a message
 		tmpMessage := Message{
 			MessageID:  msgid,
-			Timestamp:  queriedrows[1],
-			Content:    queriedrows[2],
-			Photo:      queriedrows[3],
-			Username:   queriedrows[4],
+			Timestamp:  queriedrows[2],
+			Content:    queriedrows[3],
+			Photo:      queriedrows[4],
+			Username:   queriedrows[1],
 			Checkmarks: checkmarks,
 			Comments:   emptyComments,
 			ReplyingTo: replyingid,
 		}
 
 		messages[i] = tmpMessage
+	}
+
+	return messages, nil
+}
+
+// It returns a list of message from a private or group conversation, with at most one element, being the last. It assumes the conversation exists.
+func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter) ([]Message, error) {
+	// Logging information
+	const affinity string = "Messages from chat retrieving"
+
+	// Checking if it is a private chat or a groupchat
+	var table string
+	if convID.Id < 5000 {
+		table = "privmessages"
+	} else {
+		table = "groupmessages"
+	}
+
+	// SQL query #1: retrieving message ids off the chat
+	rows, err := rt.db.Select("*", table, fmt.Sprintf("id = %d", convID.Id))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database seeking last chat messages failed", err, w, rt)
+	}
+
+	// Reading the rows
+	rawmessages, err := ChatmessagesRowReading(rows)
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were seeking last chat messages failed", err, w, rt)
+	}
+
+	// Eliminating elements of the array that are not chat ids
+	var messageids []string
+	for i, id := range rawmessages {
+		if i%2 == 1 {
+			messageids = append(messageids, id)
+		}
+	}
+
+	// SQL query #2: retrieving last message sent on chat
+	messages := make([]Message, 0, 1)
+	for _, id := range messageids {
+		rows, err := rt.db.Select("*", "messages", fmt.Sprintf("id = '%s'", id))
+		if err != nil {
+			return nil, createBackendError(affinity, "SELECT in the database seeking last message from id failed", err, w, rt)
+		}
+
+		// Reading the rows
+		queriedrows, err := MessageRowReading(rows)
+		if err != nil {
+			return nil, createBackendError(affinity, "Reading the database rows that were seeking last message from id failed", err, w, rt)
+		}
+
+		if len(messages) > 0 {
+			if messages[0].Timestamp > queriedrows[2] {
+				continue
+			}
+		} else {
+			// Creating the result message
+			// THIS MUST BE CHANGED WITH REAL COMMENTS
+			var emptyComments []Comment
+
+			// Converting results into the correct formats
+			msgid, err := strconv.Atoi(queriedrows[0])
+			if err != nil {
+				return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
+			}
+			checkmarks, err := strconv.Atoi(queriedrows[5])
+			if err != nil {
+				return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
+			}
+
+			var replyingid int
+			if queriedrows[6] != nullValue {
+				replyingid, err = strconv.Atoi(queriedrows[6])
+				if err != nil {
+					return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
+				}
+			} else {
+				replyingid = -1
+			}
+
+			// Packing everything into a message
+			tmpMessage := Message{
+				MessageID:  msgid,
+				Timestamp:  queriedrows[2],
+				Content:    queriedrows[3],
+				Photo:      queriedrows[4],
+				Username:   queriedrows[1],
+				Checkmarks: checkmarks,
+				Comments:   emptyComments,
+				ReplyingTo: replyingid,
+			}
+
+			if len(messages) > 0 {
+				messages[0] = tmpMessage
+			} else {
+				messages = append(messages, tmpMessage)
+			}
+		}
 	}
 
 	return messages, nil
