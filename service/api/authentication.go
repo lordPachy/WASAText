@@ -14,7 +14,7 @@ func Authentication(w http.ResponseWriter, r *http.Request, rt *_router) (Access
 	affinity := "authentication"
 
 	// ID retrieval
-	id := r.Header.Get("Authentication")
+	id := r.Header.Get("Authorization")
 	token := Access_token{
 		Identifier: id,
 	}
