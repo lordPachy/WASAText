@@ -7,10 +7,15 @@ import LoadingSpinner from './components/LoadingSpinner.vue'
 
 import './assets/dashboard.css'
 import './assets/main.css'
+import ConvBut from './components/ConvBut.vue';
+import StartConvBut from './components/StartConvBut.vue';
+
 
 const app = createApp(App)
 app.config.globalProperties.$axios = axios;
 app.component("ErrorMsg", ErrorMsg);
 app.component("LoadingSpinner", LoadingSpinner);
+app.component("ConvBut", ConvBut);
+app.component("StartConvBut", StartConvBut);
 app.use(router)
 app.mount('#app')

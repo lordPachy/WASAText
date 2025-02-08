@@ -1,9 +1,9 @@
 <script>
 // Component definition (JavaScript)
 export default {
-    // `data` defines a list of reactive variables.
+    // `data` defines a list of reactive variables
     props: ['token', 'show'],
-    emits: ['chats'],
+    emits: ['get-convos'],
     data: function() {
         return {
             chats: {},
@@ -14,13 +14,9 @@ export default {
 			async getConvos() {
 				this.loading = true;
 				this.errormsg = null;
-				try {
-					let response = await this.$axios.get("/converations", {identifier: token});
-                    this.chats = response.data;
-                    this.showchats = true;
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
+                let response = await this.$axios.get("/conversations", {headers: {Authorization: this.token}});
+                this.chats = response.data;
+                this.showchats = true;
 				this.loading = false;
 			},
     }
@@ -30,7 +26,7 @@ export default {
 <!-- template definition -->
 <template>
     <div  v-if="show">
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="getConvos">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @click="$emit('get-convos')"> 
             Get conversations
         </button>
         <div>

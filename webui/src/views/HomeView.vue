@@ -30,17 +30,6 @@ export default {
 				}
 				this.loading = false;
 			},
-			async createUser() {
-				this.loading = true;
-				this.errormsg = null;
-				try {
-					let response = await this.$axios.put("/session", {name: this.inputid});
-					this.id = response.data.identifier;
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
 
 			async createUser() {
 				this.loading = true;
@@ -65,6 +54,24 @@ export default {
 				}
 				this.loading = false;
 			},
+			async callGetConvos() {
+				this.loading = true;
+				this.errormsg = null;
+				try {this.$refs.myConvBut.getConvos();}
+				catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async callCreateConvo() {
+				this.loading = true;
+				this.errormsg = null;
+				try {this.$refs.myStartConvBut.createConvo();}
+				catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			}
 	}
 }
 </script>
@@ -99,10 +106,10 @@ export default {
       </button>
     </div>
 	<p>
-		<ConvBut :token="id" :show="showConversations"/>
+		<ConvBut :token="id" :show="showConversations" ref="myConvBut" @get-convos="callGetConvos"/>
 	</p>
 	<p>
-		<StartConvBut :token="id" :show="showConversations"/>
+		<StartConvBut :token="id" :show="showConversations" ref="myStartConvBut" @create-convo="callCreateConvo"/>
 	</p>
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
