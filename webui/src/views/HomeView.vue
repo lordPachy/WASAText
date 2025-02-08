@@ -5,6 +5,8 @@ export default {
 			errormsg: null,
 			loading: false,
 			some_data: null,
+			id: "",
+			inputid: "",
 		}
 	},
 	methods: {
@@ -13,24 +15,22 @@ export default {
 				this.errormsg = null;
 				try {
 					let response = await this.$axios.get("/");
-					this.games = response.data;
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
 				this.loading = false;
 			},
-			async conversations() {
-			this.loading = true;
-			this.errormsg = null;
-			try {
-				let response = await this.$axios.get("/conversations");
-				this.conversations = response.data;
-			} catch (e) {
-				this.errormsg = e.toString();
-			}
-			this.errormsg = null;
-			this.loading = false;
-		},
+			async createUser() {
+				this.loading = true;
+				this.errormsg = null;
+				try {
+					let response = await this.$axios.put("/session", {name: this.inputid});
+					this.id = response.data.identifier;
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
 	}
 }
 </script>
@@ -39,14 +39,23 @@ export default {
 	<div>
 		<div
 			class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-			<h1 class="h2">WASAText</h1>
+			<h1 class="h2">Login</h1>
 			<div class="btn-toolbar mb-2 mb-md-0">
 				<div class="btn-group me-2">
 					<button type="button" class="btn btn-sm btn-outline-secondary" @click="conversations">
 						Conversations
 					</button>
+
 				</div>
 			</div>
+		</div>
+		<p>Please login or create your user!</p>
+		<p>Username is: {{ id }}</p>
+		<input v-model="this.inputid" placeholder="edit me" />
+		<div class="btn-group me-2">
+			<button type="button" class="btn btn-sm btn-outline-secondary" @click="createUser">
+				Create User
+			</button>
 		</div>
 
 		<ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
