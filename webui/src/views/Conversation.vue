@@ -3,7 +3,7 @@
 import { RouterLink } from 'vue-router';
 
 export default {
-	props: {cid: String},
+	props: {conversationid: String},
 	data: function() {
 		return {
 			errormsg: null,
@@ -23,7 +23,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.get("/conversations/" + this.cid, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.$router.id}});
 					this.data = response.data;
 					this.messages = response.data.messages;
 					this.isGroup = Object.keys(response.data).length > 3;
@@ -36,7 +36,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.post("/conversations/" + this.cid, {content: this.message, replyingto: 0}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, replyingto: -1}, {headers: {Authorization: this.$router.id}});
 					this.message = "";
 					this.photo = "";
 					this.refresh();

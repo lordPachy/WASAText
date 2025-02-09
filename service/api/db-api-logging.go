@@ -622,47 +622,47 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 			if messages[0].Timestamp > queriedrows[2] {
 				continue
 			}
+		}
+
+		// Creating the result message
+		var emptyComments []Comment
+
+		// Converting results into the correct formats
+		msgid, err := strconv.Atoi(queriedrows[0])
+		if err != nil {
+			return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
+		}
+		checkmarks, err := strconv.Atoi(queriedrows[5])
+		if err != nil {
+			return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
+		}
+
+		var replyingid int
+		if queriedrows[6] != nullValue {
+			replyingid, err = strconv.Atoi(queriedrows[6])
+			if err != nil {
+				return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
+			}
 		} else {
-			// Creating the result message
-			var emptyComments []Comment
+			replyingid = -1
+		}
 
-			// Converting results into the correct formats
-			msgid, err := strconv.Atoi(queriedrows[0])
-			if err != nil {
-				return nil, createBackendError(affinity, "Message id conversion to int failed", err, w, rt)
-			}
-			checkmarks, err := strconv.Atoi(queriedrows[5])
-			if err != nil {
-				return nil, createBackendError(affinity, "Checkmarks conversion to int failed", err, w, rt)
-			}
+		// Packing everything into a message
+		tmpMessage := Message{
+			MessageID:  msgid,
+			Timestamp:  queriedrows[2],
+			Content:    queriedrows[3],
+			Photo:      queriedrows[4],
+			Username:   queriedrows[1],
+			Checkmarks: checkmarks,
+			Comments:   emptyComments,
+			ReplyingTo: replyingid,
+		}
 
-			var replyingid int
-			if queriedrows[6] != nullValue {
-				replyingid, err = strconv.Atoi(queriedrows[6])
-				if err != nil {
-					return nil, createBackendError(affinity, "Message replyed to id conversion to int failed", err, w, rt)
-				}
-			} else {
-				replyingid = -1
-			}
-
-			// Packing everything into a message
-			tmpMessage := Message{
-				MessageID:  msgid,
-				Timestamp:  queriedrows[2],
-				Content:    queriedrows[3],
-				Photo:      queriedrows[4],
-				Username:   queriedrows[1],
-				Checkmarks: checkmarks,
-				Comments:   emptyComments,
-				ReplyingTo: replyingid,
-			}
-
-			if len(messages) > 0 {
-				messages[0] = tmpMessage
-			} else {
-				messages = append(messages, tmpMessage)
-			}
+		if len(messages) > 0 {
+			messages[0] = tmpMessage
+		} else {
+			messages = append(messages, tmpMessage)
 		}
 	}
 

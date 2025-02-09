@@ -12,7 +12,7 @@ const router = createRouter({
 		{name: 'homepage', path: '/session', component: Homepage, props: true},
 		{name: 'conversations', path: '/conversations', component: Conversations},
 		{name: 'settings', path: '/settings', component: Settings, props: true},
-		{name: 'conversation', path: '/conversations/:cid', component: Conversation, props: true},
+		{name: 'conversation', path: '/conversations/:conversationid', component: Conversation, props: true},
 	],
 	id: "",
 	username: ""
