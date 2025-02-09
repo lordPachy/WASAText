@@ -10,7 +10,6 @@ import './assets/main.css'
 import ConvBut from './components/ConvBut.vue';
 import StartConvBut from './components/StartConvBut.vue';
 
-
 const app = createApp(App)
 app.config.globalProperties.$axios = axios;
 app.component("ErrorMsg", ErrorMsg);

@@ -1,15 +1,16 @@
 import {createRouter, createWebHashHistory} from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import Authentication from '../views/Authentication.vue'
 import Conversations from '../views/Conversations.vue'
-import CreateUser from '../views/CreateUser.vue'
+import Homepage from '../views/Homepage.vue'
+import Settings from '../views/Settings.vue'
 
 const router = createRouter({
 	history: createWebHashHistory(import.meta.env.BASE_URL),
 	routes: [
-		{path: '/', component: HomeView},
-		{path: '/session', component: HomeView},
-		{path: '/conversations', component: Conversations},
-		{path: '/settings/username', component: HomeView},
+		{name: "authentication", path: '/', component: Authentication},
+		{name: "homepage", path: '/session', component: Homepage, props: true},
+		{name: "conversations", path: '/conversations', component: Conversations, props: true},
+		{name: "settings", path: '/settings', component: Settings, props: true},
 	]
 })
 

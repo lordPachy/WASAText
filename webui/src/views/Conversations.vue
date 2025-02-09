@@ -1,14 +1,25 @@
 <script>
+import ConvBut from '../components/ConvBut.vue';
+import StartConvBut from '../components/StartConvBut.vue';
+
 export default {
+	components:{
+		ConvBut,
+		StartConvBut
+	},
+	props: {token: String, username: String},
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
 			some_data: null,
+			newUser: "",
+			groupName: "",
+			showConversations: false,
 		}
 	},
 	methods: {
-			async conversations() {
+		async conversations() {
 			this.loading = true;
 			this.errormsg = null;
 			try {
@@ -20,6 +31,24 @@ export default {
 			this.errormsg = null;
 			this.loading = false;
 		},
+			async callGetConvos() {
+				this.loading = true;
+				this.errormsg = null;
+				try {this.$refs.myConvBut.getConvos();}
+				catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async callCreateConvo() {
+				this.loading = true;
+				this.errormsg = null;
+				try {this.$refs.myStartConvBut.createConvo();}
+				catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			}
 	}
 }
 </script>
@@ -38,7 +67,12 @@ export default {
         </div>
       </div>
     </div>
-
+    <p>
+      <StartConvBut ref="myStartConvBut" :token="id" :show="showConversations" @create-convo="callCreateConvo" />
+    </p>
+    <p>
+      <ConvBut ref="myConvBut" :token="id" :show="showConversations" @get-convos="callGetConvos" />
+    </p>
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>

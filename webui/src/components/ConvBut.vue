@@ -2,7 +2,7 @@
 // Component definition (JavaScript)
 export default {
     // `data` defines a list of reactive variables
-    props: ['token', 'show'],
+    props: {'token': String, 'show': Boolean},
     emits: ['get-convos'],
     data: function() {
         return {
@@ -25,15 +25,17 @@ export default {
 
 <!-- template definition -->
 <template>
-    <div  v-if="show">
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click="$emit('get-convos')"> 
-            Get conversations
-        </button>
-        <div>
-            <p>Chats are: {{ chats }}</p>
-        </div>
-        
+  <div v-if="show">
+    <button type="button" class="btn btn-sm btn-outline-secondary" @click="$emit('get-convos')"> 
+      Get conversations
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" @click="showchats = !showchats"> 
+      Hide conversations
+    </button>
+    <div>
+      <p v-if="showchats">Chats are: {{ chats }}</p>
     </div>
+  </div>
 </template>
 
 <!-- CSS style -->
