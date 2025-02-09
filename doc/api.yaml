@@ -17,6 +17,8 @@ servers:
 tags:
   - name: conversations
     description: Actions concerning groups or private chats
+  - name: users
+    description: Actions concerning users
   - name: groups
     description: Actions concerning a given specific group
   - name: login
@@ -277,6 +279,42 @@ paths:
                 example:
                   code: 500
                   message: Internal server error
+  /users:
+    get:
+      tags: ["users"]
+      summary: Gets a list of users
+      description: |-
+        It retrieves a list of users of WASAText.
+      operationId: getUsers
+      responses:
+        '200':
+          description: Users obtained successfully
+          content: 
+            application/json:
+              schema:
+                description: User list
+                properties:
+                  userlist:
+                    description: User list
+                    type: array
+                    minItems: 0
+                    maxItems: 1000
+                    items:
+                      $ref: '#/components/schemas/User'
+                required: 
+                  - userlist
+                example: []
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /conversations:
     get:
       tags: ["conversations"]

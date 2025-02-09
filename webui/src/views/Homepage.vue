@@ -7,8 +7,13 @@ export default {
 			loading: false,
 			some_data: null,
 			username: this.$router.username,
+			userquery: "",
+			users: [],
 	}
 },
+	mounted() {
+		this.getUsers();
+	},
 	methods: {
 		async accessConversations() {
 			this.loading = true;
@@ -25,6 +30,16 @@ export default {
 			this.errormsg = null;
 			try {
 				this.$router.push({name: 'settings'});
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+			this.loading = false;
+		},
+		async getUsers() {
+			this.loading = true;
+			this.errormsg = null;
+			try {
+				this.users = await this.$axios.get("/users", {name: this.userquery}, {headers: {Authorization: this.$router.id}});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -57,6 +72,19 @@ export default {
         Settings
       </button>
     </div>
+    <div class="mt-5">
+      <h5 class="h5">Username list</h5>
+      <input v-model="userquery" placeholder="Username">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="getUsers">
+        Search
+      </button>
+    </div>
+    <ul>
+      <li v-for="u in users" :key="u">
+        {{ u.username }} 
+      </li>
+    </ul>
+	
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>
