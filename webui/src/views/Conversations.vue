@@ -133,6 +133,8 @@ export default {
         <p v-if="showConversations">Chats are: {{ chats }}</p>
       </div>
     </div>
+
+	
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>

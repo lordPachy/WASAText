@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
@@ -32,7 +33,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	// PRIVATE CONVERSATIONS
-	var privchats []ChatPreview
+	var privchats []Preview
 	var convID ConversationID
 	chats, err := PrivConversationsFromUsernameRetrieval(user, rt, w)
 	if err != nil {
@@ -82,14 +83,11 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 		if err != nil {
 			return
 		}
-		user := User{
-			Username: userraw[1],
-			Propic:   userraw[2],
-		}
 
-		chatpreview := ChatPreview{
+		chatpreview := Preview{
 			ChatID:      convID,
-			User:        user,
+			Name:        userraw[1],
+			Photo:       userraw[2],
 			LastMessage: lastmessages[0],
 		}
 		privchats = append(privchats, chatpreview)
@@ -98,7 +96,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	// GROUPS
-	var groupchats []GroupPreview
+	var groupchats []Preview
 	chats, err = GroupConversationsFromUsernameRetrieval(user, rt, w)
 	if err != nil {
 		return
@@ -140,10 +138,10 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 			return
 		}
 
-		groupPreview := GroupPreview{
+		groupPreview := Preview{
 			ChatID:      convID,
-			Groupname:   info[1],
-			Groupphoto:  info[2],
+			Name:        info[1],
+			Photo:       info[2],
 			LastMessage: lastmessages[0],
 		}
 
@@ -152,14 +150,16 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	// Putting together the two responses
-	conversations := Conversations{
-		Privchats: privchats,
-		Groups:    groupchats,
-	}
+	privchats = append(privchats, groupchats...)
+
+	// Sorting by last message
+	sort.Slice(privchats, func(i, j int) bool {
+		return privchats[i].LastMessage.Timestamp > privchats[j].LastMessage.Timestamp
+	})
 
 	// Writing the response in HTTP
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(conversations)
+	err = json.NewEncoder(w).Encode(privchats)
 	if err != nil {
 		_ = createBackendError(affinity, "Encoding conversations has failed", err, w, rt)
 		return

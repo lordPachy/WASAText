@@ -132,6 +132,28 @@ func PrivConversationsFromUsernameRetrieval(user Username, rt *_router, w http.R
 
 }
 
+// It retrieves the list of users matching a certain prefix.
+func UserQuerying(user Username, rt *_router, w http.ResponseWriter) ([]string, error) {
+	// Logging information
+	const affinity string = "User querying"
+
+	// SQL query
+	rows, err := rt.db.Select("*", "users", fmt.Sprintf("username LIKE '%s%%'", user.Name))
+	if err != nil {
+		return nil, createBackendError(affinity, "SELECT in the database querying users failed", err, w, rt)
+	}
+
+	// Reading the rows
+	chats, err := UsersRowReading(rows)
+
+	if err != nil {
+		return nil, createBackendError(affinity, "Reading the database rows that were querying user failed", err, w, rt)
+	}
+
+	return chats, nil
+
+}
+
 // It retrieves the list of group conversations for a user from the database. Each string element is a row element in the groupmembers table.
 func GroupConversationsFromUsernameRetrieval(user Username, rt *_router, w http.ResponseWriter) ([]string, error) {
 	// Logging information

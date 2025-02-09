@@ -25,14 +25,9 @@ const nullValue string = "Null"
 
 // It returns a proper date-time-formatted string.
 func GetTime() string {
-	currentTime := time.Now()
-	datetime := fmt.Sprintf("%d-%d-%dT%d:%d:%dZ",
-		currentTime.Year(),
-		currentTime.Month(),
-		currentTime.Day(),
-		currentTime.Hour(),
-		currentTime.Minute(),
-		currentTime.Second())
+	currentTime := time.Now().String()
+	datetime := fmt.Sprintf("%sT%sZ",
+		currentTime[0:10], currentTime[11:19])
 	return datetime
 }
 

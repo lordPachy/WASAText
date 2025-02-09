@@ -763,28 +763,38 @@ components:
           minItems: 0
           maxItems: 1000
           items:
-            oneOf:
-              - $ref: '#/components/schemas/ChatPreview'
-              - $ref: '#/components/schemas/GroupPreview'
+            $ref: '#/components/schemas/Preview'
           example: []
       example:
         conversations: []
-    ChatPreview:
-      title: ChatPreview
+    Preview:
+      title: Preview
       description: "This object represents the preview of a single chat"
       type: object
       properties:
         chatid:
           $ref: '#/components/schemas/ConversationID'
-        user:
-          $ref: '#/components/schemas/User'
+        name:  
+          description: username or group name
+          type: string
+          example: Maria
+          pattern: ^[\w\ ]{3,16}$
+          minLength: 3
+          maxLength: 16
+        propic:
+          type: string
+          description: profile picture or group picture
+          format: binary
+          pattern: ^0b[01]{1,14}$
+          minLength: 3
+          maxLength: 16
+          example: "0b00010010100"
         lastmessage:
           $ref: '#/components/schemas/Message'
       example:
-        conversationid: 50
-        user:
-          username: Fabio
-          propic: "0b00010010100"
+        chatid: 50
+        name: Fabio
+        photo: "0b00010010100"
         lastmessage:
           messageid: 1
           timestamp: "2017-07-21T17:32:28Z"
@@ -832,42 +842,6 @@ components:
             checkmarks: 1
             comments: []
             replyingto: 20
-    GroupPreview:
-      title: GroupPreview
-      description: "This object represents the preview of a single groupchat"
-      type: object
-      properties:
-        chatid:
-          $ref: '#/components/schemas/ConversationID'
-        groupname:
-          type: string
-          description: Name of the group
-          pattern: ^[\w\ ]{3,16}$
-          minLength: 3
-          maxLength: 16
-          example: Family
-        groupphoto:
-          type: string
-          description: Photo of the group
-          format: binary
-          pattern: ^0b[01]{1,14}$
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
-        lastmessage:
-          $ref: '#/components/schemas/Message'
-      example:
-        chatid: 50
-        groupname: Family
-        groupphoto: "0b00010010100"
-        lastmessage:
-          messageid: 1
-          timestamp: "2017-07-21T17:32:28Z"
-          content: Hello
-          username: Mario
-          checkmarks: 1
-          comments: []
-          replyingto: 20
     Group:
       title: Group
       description: "This object represents a single group"
