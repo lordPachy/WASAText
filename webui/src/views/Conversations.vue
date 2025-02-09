@@ -1,5 +1,7 @@
 <script>
 
+import { RouterLink } from 'vue-router';
+
 export default {
 	data: function() {
 		return {
@@ -77,6 +79,9 @@ export default {
 				}
 				this.loading = false;
 			},
+			async parseDateTime(dtime) {
+				return dtime
+			},
 	}
 }
 </script>
@@ -129,8 +134,18 @@ export default {
       <button type="button" class="btn btn-sm btn-outline-secondary" @click="showConversations = false"> 
         Hide conversations
       </button>
-      <div>
-        <p v-if="showConversations">Chats are: {{ chats }}</p>
+      <div v-if="showConversations">
+        <p>Chats are: {{ chats }}</p>
+        <ul>
+          <li v-for="f in chats" :key="f">
+            {{ f.name }}: "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
+            <RouterLink :to="/conversations/+f.chatid.id" class="nav-link">
+              <button type="button" class="btn btn-sm btn-outline-secondary"> 
+                Open
+              </button>
+            </RouterLink>
+          </li>
+        </ul>
       </div>
     </div>
 
