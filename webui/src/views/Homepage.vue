@@ -1,23 +1,20 @@
 <script>
 
 export default {
-	props: {token: String, username: String},
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
 			some_data: null,
-			newUser: "",
-			groupName: "",
-			showConversations: false,
-		}
-	},
+			username: this.$router.username,
+	}
+},
 	methods: {
 		async accessConversations() {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				this.$router.push({name: 'conversations', params: {token:this.token, username:this.username}});
+				this.$router.push({name: 'conversations'});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -27,7 +24,7 @@ export default {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				this.$router.push({name: 'settings', params: {token:this.token, username:this.username}});
+				this.$router.push({name: 'settings'});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -42,7 +39,7 @@ export default {
     <div
       class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
     >
-      <h1 class="h2">Welcome, {{ username }}!</h1>
+      <h1 class="h2">Welcome {{ username }}!</h1>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2" />
       </div>

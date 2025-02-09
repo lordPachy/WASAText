@@ -28,7 +28,9 @@ export default {
 				try {
 					let response = await this.$axios.put("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.push({name: 'homepage', params: {token:this.id, username:this.inputid}});
+					this.$router.id = this.id;
+					this.$router.username = this.inputid;
+					this.$router.push({name: 'homepage'});
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
@@ -40,7 +42,9 @@ export default {
 				try {
 					let response = await this.$axios.post("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.push({name: 'homepage', params: {token:this.id, username:this.inputid}});
+					this.$router.id = this.id;
+					this.$router.username = this.inputid;
+					this.$router.push({name: 'homepage'});
 					this.showConversations = true;
 				} catch (e) {
 					this.errormsg = e.toString();
