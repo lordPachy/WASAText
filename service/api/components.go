@@ -8,22 +8,11 @@ type Image struct {
 	Image string `json:"image"`
 }
 
-type ChatPreview struct {
+type Preview struct {
 	ChatID      ConversationID `json:"chatid"`
-	User        User           `json:"user"`
+	Name        string         `json:"name"`
+	Photo       string         `json:"photo"`
 	LastMessage Message        `json:"lastmessage"`
-}
-
-type GroupPreview struct {
-	ChatID      ConversationID `json:"chatid"`
-	Groupname   string         `json:"groupname"`
-	Groupphoto  string         `json:"groupphoto"`
-	LastMessage Message        `json:"lastmessage"`
-}
-
-type Conversations struct {
-	Privchats []ChatPreview  `json:"privchats"`
-	Groups    []GroupPreview `json:"groups"`
 }
 
 type ConversationRequest struct {

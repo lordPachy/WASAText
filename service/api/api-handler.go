@@ -16,6 +16,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PUT("/settings/profilepicture", rt.setMyPhoto)
 
 	// Conversation methods
+	rt.router.GET("/users", rt.getUsers)
 	rt.router.GET("/conversations", rt.getMyConversations)
 	rt.router.PUT("/conversations", rt.createConversation)
 	rt.router.GET("/conversations/:conversationid", rt.getConversation)

@@ -45,7 +45,6 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	if !match {
-		w.WriteHeader(http.StatusBadRequest)
 		createFaultyResponse(http.StatusBadRequest, "Message parsed incorrectly or not valid", affinity, "Request encoding for message not correcly formatted response has failed", w, rt)
 		return
 	}

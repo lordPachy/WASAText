@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -32,6 +33,11 @@ func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps ht
 	if err != nil {
 		return
 	}
+
+	// Sorting messages
+	sort.Slice(messages, func(i, j int) bool {
+		return messages[i].Timestamp > messages[j].Timestamp
+	})
 
 	// Retrieving the sender's username
 	senderUsername, err := UserFromIdRetrieval(token, rt, w)
