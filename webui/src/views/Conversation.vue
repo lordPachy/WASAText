@@ -13,7 +13,8 @@ export default {
 			isGroup: false,
 			newuser: "",
 			message: "",
-			photo: "",
+			sendingpic: false,
+			photo: "NULL",
 			forwarding: false,
 			forwardingto: -1,
 			replyingto: -1,
@@ -42,10 +43,11 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, replyingto: this.replyingto}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, photo: this.photo, replyingto: this.replyingto}, {headers: {Authorization: this.$router.id}});
 					this.message = "";
-					this.photo = "";
+					this.photo = "NULL";
 					this.replyingto = -1;
+					this.sendingpic = false;
 					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -120,6 +122,13 @@ export default {
 					}
 				}
 			},
+			repliedPhoto(messid) {
+				for (let i = 0; i < this.messages.length; i++){
+					if (this.messages[i].messageid == messid){
+						return this.messages[i].photo
+					}
+				}
+			},
 			async deleteMessage(mess) {
 				this.loading = true;
 				this.errormsg = null;
@@ -167,6 +176,21 @@ export default {
 				}
 				this.loading = false;
 			},
+			async uploadImage(a) {
+				this.loading = true;
+				this.errormsg = null;
+				try {
+					const image = a.target.files[0];
+					const reader = new FileReader();
+					reader.readAsDataURL(image);
+					reader.onload = a =>{
+						this.photo = a.target.result;
+					};
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
 
 	}
 }
@@ -178,14 +202,22 @@ export default {
       v-if="!isGroup" 
       class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
     >
-      <h1 class="h2">Private chat with {{ data.user.username }}</h1>
+      <h1 class="h2">
+        Private chat with
+        <img v-if="data.user.propic != 'NULL'" :src="data.user.propic" class="image-big">
+        {{ data.user.username }}
+      </h1>
       <div class="btn-toolbar mb-2 mb-md-0" />
     </div>
     <div
       v-else 
       class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
     >
-      <h1 class="h2">Group: {{ data.groupname }}</h1>
+      <h1 class="h2">
+        Group:
+        <img v-if="data.groupphoto != 'NULL'" :src="data.groupphoto" class="image-big">
+        {{ data.groupname }}
+      </h1>
       <div class="btn-toolbar mb-2 mb-md-0" />
     </div>
 
@@ -223,24 +255,29 @@ export default {
             <button v-if="m.username == $router.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
               Delete message
             </button>
-          </p> 
-          <div v-if="m.username === $router.username" class="mb-3"><span />Checkmarks: {{ m.checkmarks }}</div>
+          </p>
+          <div>
+            <bigspan />
+            <img v-if="m.photo != 'NULL' && m.photo != ''" :src="m.photo" class="image-big">
+          </div>
+          <div v-if="m.username === $router.username" class="mb-3"><bigspan />Checkmarks: {{ m.checkmarks }}</div>
           <div>
             <p v-if="m.replyingto != -1">
-              <span />This message is replying to:<br>
-              <span />{{ repliedMessage(m.replyingto) }}
+              <bigspan />This message is replying to:<br>
+              <bigspan />{{ repliedMessage(m.replyingto) }}
+              <img v-if="repliedPhoto(m.replyingto) != 'NULL' && repliedPhoto(m.replyingto) != ''" :src="repliedPhoto(m.replyingto)" class="image-min">
             </p>
           </div> 
           <div v-if="m.username != $router.username && !hasOwnComment(m)">
-            <span />Put a comment:
+            <bigspan />Put a comment:
           </div>
           <div v-if="m.username != $router.username && hasOwnComment(m)">
-            <span /><button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMyComments(m)">
+            <bigspan /><button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMyComments(m)">
               Delete my comment
             </button>
           </div>
           <div v-if="m.username != $router.username && !hasOwnComment(m)">
-            <span />
+            <bigspan />
             <select v-model="selected" class="mb-3" @click.stop="putComment(m, selected)">
               <option disabled value="None">Please select one</option>
               <option>laugh</option>
@@ -251,29 +288,57 @@ export default {
               <option>pray</option>
             </select>
           </div>
-          <span />Comments:
-          <p v-for="r in m.comments" :key="r"><span />{{ r.reaction }} by {{ r.sender }} </p>
+          <bigspan />Comments:
+          <p v-for="r in m.comments" :key="r"><bigspan />{{ r.reaction }} by {{ r.sender }} </p>
         </li>
       </ul>
     </div>
 	
-    <p v-if="replyingto != -1">
+    <div v-if="replyingto != -1">
       Currently replying to the following message:<br>
       {{ repliedMessage(replyingto) }}
+      <div>
+        <bigspan />
+        <img v-if="repliedPhoto(replyingto) != 'NULL' && repliedPhoto(replyingto) != ''" :src="repliedPhoto(replyingto)" class="image-min">
+      </div>
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = -1">
         Abort reply
       </button>
-    </p>
+    </div>
     
+    <div v-if="sendingpic">
+      <p class="mt-5">Select a picture:</p>
+      <input type="file" accept="image/png" @change="uploadImage">
+      <img v-if="photo != 'NULL'" :src="photo" class="image-fit">
+      <div class="btn-group me-2">
+        <smallspan />
+        <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="photo = 'NULL'; sendingpic = false">
+          Discard
+        </button>
+      </div>
+    </div>
+    
+    <br>
     <textarea v-model="message" class="bottom" placeholder="New message" />
     <div class="btn-group me-2">
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="sendMessage">
         Send
+      </button>
+      <button v-if="!sendingpic" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="sendingpic = true">
+        Picture selection
       </button>
     </div>
   </div>
 </template>
 
 <style>
-span { margin-left:11.8em }
+bigspan { margin-left:11.8em }
+.image-big{
+  width: 2cm;
+  object-fit: fit;
+}
+.image-min{
+  width: 0.5cm;
+  object-fit: fit;
+}
 </style>

@@ -24,6 +24,18 @@ export default {
 				}
 				this.loading = false;
 			},
+			async setMyProPic() {
+				this.loading = true;
+				this.errormsg = null;
+				try {
+					console.log("hello");
+					await this.$axios.put("/settings/profilepicture", {image: this.previewImage}, {headers: {Authorization: this.$router.id}});
+					this.$router.push({name: 'homepage'});
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
 			async uploadImage(a) {
 				this.loading = true;
 				this.errormsg = null;
@@ -33,7 +45,6 @@ export default {
 					reader.readAsDataURL(image);
 					reader.onload = a =>{
 						this.previewImage = a.target.result;
-						console.log(this.previewImage);
 					};
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -65,10 +76,13 @@ export default {
 
     <p class="mt-5">Insert a picture if you want to change it:</p>
     <input type="file" accept="image/png" @change="uploadImage">
-    <img :src="previewImage" class="uploading-image">
+    <img v-if="previewImage != null" :src="previewImage" class="image-fit">
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="setMyProPic">
         Apply changes
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="previewImage = null">
+        Reset image
       </button>
     </div>
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
@@ -76,4 +90,9 @@ export default {
 </template>
 
 <style>
+.image-fit{
+  height: 7%;
+  width: 7%;
+  object-fit: cover;
+}
 </style>

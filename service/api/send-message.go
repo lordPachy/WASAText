@@ -119,16 +119,8 @@ func checkMessageCorrectness(newMessage RequestMessage, rt *_router, w http.Resp
 		}
 	}
 
-	// Checking that photo is valid
 	if len(newMessage.Photo) > 0 {
-		message_validity, err = regexp.MatchString(`[-A-Za-z0-9+/=]|=[^=]|={3,16}`, newMessage.Photo)
-		if err != nil {
-			return false, createBackendError(affinity, "Matching message photo with appropriate regex failed", err, w, rt)
-		}
-
-		if !message_validity {
-			return false, nil
-		}
+		message_validity = true
 	}
 
 	// Replying to a message with id -1 corresponds to
