@@ -4,6 +4,7 @@ import Conversations from '../views/Conversations.vue'
 import Conversation from '../views/Conversation.vue'
 import Homepage from '../views/Homepage.vue'
 import Settings from '../views/Settings.vue'
+import GroupSettings from '../views/GroupSettings.vue'
 
 const router = createRouter({
 	history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -12,6 +13,7 @@ const router = createRouter({
 		{name: 'homepage', path: '/session', component: Homepage, props: true},
 		{name: 'conversations', path: '/conversations', component: Conversations},
 		{name: 'settings', path: '/settings', component: Settings, props: true},
+		{name: 'groupsettings', path: '/conversations/:conversationid/settings', component: GroupSettings, props: true},
 		{name: 'conversation', path: '/conversations/:conversationid', component: Conversation, props: true},
 	],
 	id: "",
