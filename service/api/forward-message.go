@@ -73,7 +73,7 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 	timestamp := GetTime()
 
 	// Actually writing the message in the DB
-	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s, %s)", id, user[1], timestamp, messInfo[3], messInfo[4], 0, nullValue, messInfo[1])
+	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s, '%s')", id, user[1], timestamp, messInfo[3], messInfo[4], 0, nullValue, messInfo[1])
 
 	_, err = rt.db.Insert("messages", query)
 	if err != nil {

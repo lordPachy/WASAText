@@ -21,7 +21,7 @@ This function passes errors without handling them.
 
 // Null value for database
 
-const nullValue string = "Null"
+const nullValue string = "NULL"
 
 // It returns a proper date-time-formatted string.
 func GetTime() string {

@@ -563,7 +563,7 @@ func MessagesFromConvo(convID ConversationID, rt *_router, w http.ResponseWriter
 			Checkmarks: checkmarks,
 			Comments:   comments,
 			ReplyingTo: replyingid,
-			OG_Sender:  queriedrows[5],
+			OG_Sender:  queriedrows[7],
 		}
 
 		messages[i] = tmpMessage
@@ -658,7 +658,7 @@ func LastMessageFromConvo(convID ConversationID, rt *_router, w http.ResponseWri
 			Checkmarks: checkmarks,
 			Comments:   emptyComments,
 			ReplyingTo: replyingid,
-			OG_Sender:  queriedrows[5],
+			OG_Sender:  queriedrows[7],
 		}
 
 		if len(messages) > 0 {
