@@ -14,10 +14,15 @@ export default {
 			newuser: "",
 			message: "",
 			photo: "",
+			forwarding: false,
+			forwardingto: -1,
+			replyingto: -1,
+			chats: []
 		}
 	},
 	created() {
 		this.refresh();
+		this.getConvos();
 	},
 	methods: {
 			async refresh() {
@@ -37,9 +42,10 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, replyingto: -1}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, replyingto: this.replyingto}, {headers: {Authorization: this.$router.id}});
 					this.message = "";
 					this.photo = "";
+					this.replyingto = -1;
 					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -96,7 +102,6 @@ export default {
 				try{
 					for (let i = 0; i < mess.comments.length; i++){
 						if (mess.comments[i].sender == this.$router.username){
-							console.log(mess.comments[i].commentid)
 							await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.$router.id}});
 						}
 					}
@@ -106,6 +111,14 @@ export default {
 					this.errormsg = e.toString();
 				}
 				this.loading = false;
+			},
+
+			repliedMessage(messid) {
+				for (let i = 0; i < this.messages.length; i++){
+					if (this.messages[i].messageid == messid){
+						return "From " + this.messages[i].username + ": " + this.messages[i].content
+					}
+				}
 			},
 			async deleteMessage(mess) {
 				this.loading = true;
@@ -118,7 +131,43 @@ export default {
 					this.errormsg = e.toString();
 				}
 				this.loading = false;
-			}
+			},
+
+			async groupSettings() {
+				this.loading = true;
+				this.errormsg = null;
+				try {
+					this.$router.push({name: 'groupsettings'}, {params: {conversationid: this.conversationid}});
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async getConvos() {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.$router.id}});
+					this.chats = response.data;
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async forwardMessage(mess) {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {id: this.forwardingto}, {headers: {Authorization: this.$router.id}});
+					this.forwarding = false;
+					this.forwardingto = -1;
+					this.refresh();
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+
 	}
 }
 </script>
@@ -143,12 +192,15 @@ export default {
     <h5 class="h5">Group options</h5>
     <div v-if="isGroup">
       <input v-model="newuser" placeholder="New group member">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="addMemberToGroup">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="addMemberToGroup">
         Add member to group
       </button>
     </div>
     <div v-if="isGroup">
-      <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click="leaveGroup">
+      <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click.stop="groupSettings">
+        Group Settings
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click.stop="leaveGroup">
         Leave this group
       </button>
     </div>
@@ -157,34 +209,62 @@ export default {
       <ul>
         <li v-for="m in data.messages" :key="m" class="mb-4">
           <p>
-            ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}: "{{ m.content }}"
+            ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = m.messageid">
+              Reply
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="forwarding = !forwarding">
+              Forward
+            </button>
+            <select v-if="forwarding" v-model="forwardingto" class="mb-3" @click.stop="forwardMessage(m)">
+              <option disabled value="-1">Please select one</option>
+              <option v-for="c in chats" :key="c" :value="c.chatid.id">{{ c.name }}</option>
+            </select>
             <button v-if="m.username == $router.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
               Delete message
             </button>
           </p> 
-          <div v-if="m.username === $router.username"><span />Checkmarks: {{ m.checkmarks }}</div>
-          <div v-if="m.username != $router.username && !hasOwnComment(m)"><span />Put a comment:</div>
+          <div v-if="m.username === $router.username" class="mb-3"><span />Checkmarks: {{ m.checkmarks }}</div>
+          <div>
+            <p v-if="m.replyingto != -1">
+              <span />This message is replying to:<br>
+              <span />{{ repliedMessage(m.replyingto) }}
+            </p>
+          </div> 
+          <div v-if="m.username != $router.username && !hasOwnComment(m)">
+            <span />Put a comment:
+          </div>
           <div v-if="m.username != $router.username && hasOwnComment(m)">
             <span /><button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMyComments(m)">
               Delete my comment
             </button>
           </div>
-          <span v-if="m.username != $router.username && !hasOwnComment(m)" />
-          <select v-if="m.username != $router.username && !hasOwnComment(m)" v-model="selected" class="mb-3" @click.stop="putComment(m, selected)">
-            <option disabled value="None">Please select one</option>
-            <option>laugh</option>
-            <option>sad</option>
-            <option>thumbs_up</option>
-            <option>surprised</option>
-            <option>love</option>
-            <option>pray</option>
-          </select>
-          <br><span />Comments:
+          <div v-if="m.username != $router.username && !hasOwnComment(m)">
+            <span />
+            <select v-model="selected" class="mb-3" @click.stop="putComment(m, selected)">
+              <option disabled value="None">Please select one</option>
+              <option>laugh</option>
+              <option>sad</option>
+              <option>thumbs_up</option>
+              <option>surprised</option>
+              <option>love</option>
+              <option>pray</option>
+            </select>
+          </div>
+          <span />Comments:
           <p v-for="r in m.comments" :key="r"><span />{{ r.reaction }} by {{ r.sender }} </p>
         </li>
       </ul>
     </div>
 	
+    <p v-if="replyingto != -1">
+      Currently replying to the following message:<br>
+      {{ repliedMessage(replyingto) }}
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = -1">
+        Abort reply
+      </button>
+    </p>
+    
     <textarea v-model="message" class="bottom" placeholder="New message" />
     <div class="btn-group me-2">
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="sendMessage">

@@ -65,6 +65,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 				Checkmarks: -1,
 				Comments:   emptyComments,
 				ReplyingTo: -1,
+				OG_Sender:  "",
 			}
 
 			lastmessages = append(lastmessages, lastmessage)
@@ -127,6 +128,7 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, ps
 				Checkmarks: -1,
 				Comments:   emptyComments,
 				ReplyingTo: -1,
+				OG_Sender:  "",
 			}
 
 			lastmessages = append(lastmessages, lastmessage)

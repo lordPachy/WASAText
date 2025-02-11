@@ -67,11 +67,11 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	// Getting the message id of who we are replying to
 	replyingTo := fmt.Sprintf("'%s'", strconv.Itoa(newMessage.ReplyingTo))
 	if replyingTo == "'-1'" {
-		replyingTo = "NULL"
+		replyingTo = nullValue
 	}
 
 	// Actually writing the message in the DB
-	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s)", id, user[1], timestamp, newMessage.Content, newMessage.Photo, 0, replyingTo)
+	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s, %s)", id, user[1], timestamp, newMessage.Content, newMessage.Photo, 0, replyingTo, nullValue)
 
 	_, err = rt.db.Insert("messages", query)
 	if err != nil {

@@ -72,8 +72,16 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 	// Getting the new timestamp
 	timestamp := GetTime()
 
+	// If the other message had another original sender, write that down
+	var og_sender string
+	if messInfo[7] != "NULL" {
+		og_sender = messInfo[7]
+	} else {
+		og_sender = messInfo[1]
+	}
+
 	// Actually writing the message in the DB
-	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s)", id, user[1], timestamp, messInfo[3], messInfo[4], 0, nullValue)
+	query := fmt.Sprintf("(%d, '%s', '%s', '%s', '%s', %d, %s, '%s')", id, user[1], timestamp, messInfo[3], messInfo[4], 0, nullValue, og_sender)
 
 	_, err = rt.db.Insert("messages", query)
 	if err != nil {

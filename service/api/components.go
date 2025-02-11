@@ -83,6 +83,7 @@ type Message struct {
 	Checkmarks int       `json:"checkmarks"`
 	Comments   []Comment `json:"comments"`
 	ReplyingTo int       `json:"replyingto"`
+	OG_Sender  string    `json:"og_sender"`
 }
 
 type Chat struct {

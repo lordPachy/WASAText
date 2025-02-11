@@ -21,7 +21,7 @@ This function passes errors without handling them.
 
 // Null value for database
 
-const nullValue string = "Null"
+const nullValue string = "NULL"
 
 // It returns a proper date-time-formatted string.
 func GetTime() string {
@@ -204,10 +204,10 @@ func GroupmessageschecksRowReading(res *sql.Rows) ([]string, error) {
 func MessageRowReading(res *sql.Rows) ([]string, error) {
 	// Retrieving the values from rows
 	var answer []string // array of actual values
-	var id, sender, created_at, content, photo, checkmarks, replying_to *string
+	var id, sender, created_at, content, photo, checkmarks, replying_to, og_sender *string
 	for {
 		if res.Next() { // there is another value to be scanned
-			err := res.Scan(&id, &sender, &created_at, &content, &photo, &checkmarks, &replying_to)
+			err := res.Scan(&id, &sender, &created_at, &content, &photo, &checkmarks, &replying_to, &og_sender)
 			if err == nil {
 				tmp := nullValue
 				if content == nil {
@@ -219,7 +219,10 @@ func MessageRowReading(res *sql.Rows) ([]string, error) {
 				if replying_to == nil {
 					replying_to = &tmp
 				}
-				answer = append(answer, *id, *sender, *created_at, *content, *photo, *checkmarks, *replying_to)
+				if og_sender == nil {
+					og_sender = &tmp
+				}
+				answer = append(answer, *id, *sender, *created_at, *content, *photo, *checkmarks, *replying_to, *og_sender)
 			} else {
 				return nil, err // the scan has had an error
 			}
