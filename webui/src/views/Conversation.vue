@@ -14,11 +14,15 @@ export default {
 			newuser: "",
 			message: "",
 			photo: "",
+			forwarding: false,
+			forwardingto: -1,
 			replyingto: -1,
+			chats: []
 		}
 	},
 	created() {
 		this.refresh();
+		this.getConvos();
 	},
 	methods: {
 			async refresh() {
@@ -98,7 +102,6 @@ export default {
 				try{
 					for (let i = 0; i < mess.comments.length; i++){
 						if (mess.comments[i].sender == this.$router.username){
-							console.log(mess.comments[i].commentid)
 							await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.$router.id}});
 						}
 					}
@@ -135,6 +138,30 @@ export default {
 				this.errormsg = null;
 				try {
 					this.$router.push({name: 'groupsettings'}, {params: {conversationid: this.conversationid}});
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async getConvos() {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.$router.id}});
+					this.chats = response.data;
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
+			async forwardMessage(mess) {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {id: this.forwardingto}, {headers: {Authorization: this.$router.id}});
+					this.forwarding = false;
+					this.forwardingto = -1;
+					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
@@ -182,10 +209,17 @@ export default {
       <ul>
         <li v-for="m in data.messages" :key="m" class="mb-4">
           <p>
-            ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}: "{{ m.content }}"
+            ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
             <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = m.messageid">
               Reply
             </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="forwarding = !forwarding">
+              Forward
+            </button>
+            <select v-if="forwarding" v-model="forwardingto" class="mb-3" @click.stop="forwardMessage(m)">
+              <option disabled value="-1">Please select one</option>
+              <option v-for="c in chats" :key="c" :value="c.chatid.id">{{ c.name }}</option>
+            </select>
             <button v-if="m.username == $router.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
               Delete message
             </button>
