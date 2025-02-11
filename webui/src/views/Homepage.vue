@@ -8,7 +8,7 @@ export default {
 			some_data: null,
 			username: this.$router.username,
 			userquery: "",
-			users: [],
+			users: []
 	}
 },
 	mounted() {
@@ -39,7 +39,8 @@ export default {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				this.users = await this.$axios.get("/users", {name: this.userquery}, {headers: {Authorization: this.$router.id}});
+				let response = await this.$axios.get("/users", {headers: {Authorization: this.$router.id}, params: {username: this.userquery}});
+				this.users = response.data;
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -73,18 +74,19 @@ export default {
       </button>
     </div>
     <div class="mt-5">
-      <h5 class="h5">Username list</h5>
+      <h5 class="h5">User list</h5>
       <input v-model="userquery" placeholder="Username">
       <button type="button" class="btn btn-sm btn-outline-secondary" @click="getUsers">
         Search
       </button>
     </div>
-    <ul>
-      <li v-for="u in users" :key="u">
-        {{ u.username }} 
-      </li>
-    </ul>
-	
+    <div>
+      <ul>
+        <li v-for="u in users" :key="u">
+          {{ u.name }} 
+        </li>
+      </ul>
+    </div>
     <ErrorMsg v-if="errormsg" :msg="errormsg" />
   </div>
 </template>
