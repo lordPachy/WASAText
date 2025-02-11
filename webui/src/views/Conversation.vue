@@ -289,7 +289,11 @@ export default {
             </select>
           </div>
           <bigspan />Comments:
-          <p v-for="r in m.comments" :key="r"><bigspan />{{ r.reaction }} by {{ r.sender }} </p>
+          <p v-for="r in m.comments" :key="r">
+            <bigspan />
+            <img :src="r.reaction + '.png'" class="image-min">
+            by {{ r.sender }}
+          </p>
         </li>
       </ul>
     </div>
