@@ -138,12 +138,16 @@ export default {
         <p>Chats are:</p>
         <ul>
           <li v-for="f in chats" :key="f">
-            {{ f.name }}: "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
+            <img v-if="f.photo != 'NULL'" :src="f.photo" class="image-fit"><smallspan v-if="f.photo != 'NULL'" />
+            {{ f.name }}: 
+            <img v-if="f.lastmessage.photo != 'NULL' && f.lastmessage.photo != ''" :src="f.lastmessage.photo" class="image-min">
+            "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
             <RouterLink :to="/conversations/+f.chatid.id" class="nav-link">
               <button type="button" class="btn btn-sm btn-outline-secondary"> 
                 Open
               </button>
             </RouterLink>
+            <br><br>
           </li>
         </ul>
       </div>
@@ -155,4 +159,5 @@ export default {
 </template>
 
 <style>
+smallspan { margin-left:3em }
 </style>

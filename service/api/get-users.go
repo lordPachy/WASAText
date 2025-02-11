@@ -24,7 +24,7 @@ func (rt *_router) getUsers(w http.ResponseWriter, r *http.Request, ps httproute
 	userQuery := r.URL.Query().Get("username")
 
 	// Retrieving users
-	var users []Username
+	var users []User
 	usersraw, err := UserQuerying(Username{userQuery}, rt, w)
 	if err != nil {
 		return
@@ -32,7 +32,7 @@ func (rt *_router) getUsers(w http.ResponseWriter, r *http.Request, ps httproute
 
 	i := 0
 	for i < len(usersraw) {
-		users = append(users, Username{usersraw[i+1]})
+		users = append(users, User{usersraw[i+1], usersraw[i+2]})
 		i += 3
 	}
 

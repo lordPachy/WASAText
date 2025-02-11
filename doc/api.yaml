@@ -250,11 +250,10 @@ paths:
             schema:
               description: photo
               type: string
-              pattern: ^0b[01]{1,14}$
-              minLength: 3
-              maxLength: 16
-              format: binary
-            example: "0b00010010100"
+              format: byte
+              minLength: 5
+              maxLength: 10000000
+            example: "000010010100"
         required: true
       responses:
         '202':
@@ -576,13 +575,11 @@ paths:
                 value:
                   type: string
                   description: photo
-                  format: binary
-                  pattern: ^0b[01]{1,14}$
-                  minLength: 3
-                  maxLength: 16
-                  example: "0b00010010100"
+                  format: byte
+                  minLength: 5
+                  maxLength: 10000000
               example:
-                value: "0b00010010100"
+                value: "000010010100"
         required: true
       responses:
         '202':
@@ -834,7 +831,7 @@ components:
       example:
         chatid: 50
         name: Fabio
-        photo: "0b00010010100"
+        photo: "000010010100"
         lastmessage:
           messageid: 1
           timestamp: "2017-07-21T17:32:28Z"
@@ -931,11 +928,10 @@ components:
         groupphoto:
           type: string
           description: Photo of the group
-          format: binary
-          pattern: ^0b[01]{1,14}$
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
+          format: byte
+          minLength: 5
+          maxLength: 10000000
+          example: "000010010100"
       example:
         conversationid: 10
         members:
@@ -952,7 +948,7 @@ components:
             comments: []
             replyingto: 20
         groupname: Family
-        groupphoto: "0b00010010100"
+        groupphoto: "000010010100"
 
     Message:
       title: Message
@@ -981,11 +977,10 @@ components:
         photo:
           type: string
           description: Photo of the message
-          format: binary
-          pattern: ^0b[01]{1,14}$
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
+          format: byte
+          minLength: 5
+          maxLength: 10000000
+          example: "000010010100"
         username:
           $ref: '#/components/schemas/Username'     # sender's username
         checkmarks:

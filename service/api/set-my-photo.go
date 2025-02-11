@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -27,18 +26,6 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	err = json.NewDecoder(r.Body).Decode(&newPhoto)
 	if err != nil {
 		createFaultyResponse(http.StatusBadRequest, "The received body is not an image", affinity, "Request encoding for badly formatted image has failed", w, rt)
-		return
-	}
-
-	// Checking if the image is valid
-	match, err := regexp.MatchString(`^0b[01]{1,14}$`, newPhoto.Image)
-
-	if err != nil {
-		_ = createBackendError(affinity, "The string matching mechanism for picture string has failed", err, w, rt)
-		return
-	}
-	if !match {
-		createFaultyResponse(http.StatusBadRequest, "The profile picture is not valid (it may be too short, or long, or containing not valid characters)", affinity, "Request encoding for not valid profile picture response failed", w, rt)
 		return
 	}
 

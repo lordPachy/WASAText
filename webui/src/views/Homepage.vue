@@ -83,7 +83,8 @@ export default {
     <div>
       <ul>
         <li v-for="u in users" :key="u">
-          {{ u.name }} 
+          <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
+          {{ u.username }} 
         </li>
       </ul>
     </div>
@@ -92,4 +93,9 @@ export default {
 </template>
 
 <style>
+.image-fit{
+  height: 7%;
+  width: 7%;
+  object-fit: cover;
+}
 </style>
