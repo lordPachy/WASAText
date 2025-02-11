@@ -135,7 +135,7 @@ export default {
         Hide conversations
       </button>
       <div v-if="showConversations">
-        <p>Chats are: {{ chats }}</p>
+        <p>Chats are:</p>
         <ul>
           <li v-for="f in chats" :key="f">
             {{ f.name }}: "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
