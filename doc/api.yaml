@@ -283,6 +283,8 @@ paths:
     get:
       tags: ["users"]
       summary: Gets a list of users
+      parameters: 
+        - $ref: '#/components/parameters/username'
       description: |-
         It retrieves a list of users of WASAText.
       operationId: getUsers
@@ -1066,6 +1068,14 @@ components:
         message: UnauthorizedError
 
   parameters:
+    username:
+      schema:
+        $ref: '#/components/schemas/Username'
+      example: "Mario"
+      name: username
+      in: query
+      description: Username of a user, for retrieving lists of users.
+      required: false
     conversationid:
       schema:
         $ref: '#/components/schemas/ConversationID'

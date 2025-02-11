@@ -21,16 +21,11 @@ func (rt *_router) getUsers(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	// Getting the user name
-	var userQuery Username
-	err = json.NewDecoder(r.Body).Decode(&userQuery)
-	if err != nil {
-		createFaultyResponse(http.StatusBadRequest, "The received body is not a user query", affinity, "Request encoding for badly formatted user query has failed", w, rt)
-		return
-	}
+	userQuery := r.URL.Query().Get("username")
 
 	// Retrieving users
 	var users []Username
-	usersraw, err := UserQuerying(userQuery, rt, w)
+	usersraw, err := UserQuerying(Username{userQuery}, rt, w)
 	if err != nil {
 		return
 	}
