@@ -16,8 +16,6 @@ const router = createRouter({
 		{name: 'groupsettings', path: '/conversations/:conversationid/settings', component: GroupSettings, props: true},
 		{name: 'conversation', path: '/conversations/:conversationid', component: Conversation, props: true},
 	],
-	id: "",
-	username: ""
 })
 
 export default router

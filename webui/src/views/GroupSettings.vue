@@ -1,11 +1,14 @@
 <script>
 
+import { useIDStore } from '../store';
+
 export default {
 	props: {conversationid: String},
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			newgroupname: "",
 			previewImage: null,
 		}
@@ -15,7 +18,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try {
-					let response = await this.$axios.put("/conversations/" + this.conversationid + "/settings/groupname", {value: this.newgroupname}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.put("/conversations/" + this.conversationid + "/settings/groupname", {value: this.newgroupname}, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: "conversation", params: {conversationid: this.conversationid}});
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -43,7 +46,7 @@ export default {
 				this.errormsg = null;
 				try {
 					console.log("hello");
-					await this.$axios.put("/conversations/" + this.conversationid + "/settings/grouphoto", {image: this.previewImage}, {headers: {Authorization: this.$router.id}});
+					await this.$axios.put("/conversations/" + this.conversationid + "/settings/grouphoto", {image: this.previewImage}, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: "conversation", params: {conversationid: this.conversationid}});
 				} catch (e) {
 					this.errormsg = e.toString();

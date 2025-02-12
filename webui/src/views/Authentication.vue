@@ -1,10 +1,11 @@
 <script>
-
+import { useIDStore } from '../store';
 export default {
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			id: "",
 			inputid: "",
 			newUser: "",
@@ -27,8 +28,8 @@ export default {
 				try {
 					let response = await this.$axios.put("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.id = this.id;
-					this.$router.username = this.inputid;
+					this.store.changeID(this.id);
+					this.store.changeUsername(this.inputid);
 					this.$router.push({name: 'homepage'});
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -36,13 +37,14 @@ export default {
 				this.loading = false;
 			},
 			async login() {
+				console.log(this.store.userInfo.id);
 				this.loading = true;
 				this.errormsg = null;
 				try {
 					let response = await this.$axios.post("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.id = this.id;
-					this.$router.username = this.inputid;
+					this.store.changeID(this.id);
+					this.store.changeUsername(this.inputid);
 					this.$router.push({name: 'homepage'});
 					this.showConversations = true;
 				} catch (e) {
@@ -65,7 +67,7 @@ export default {
       </div>
     </div>
     <p>Please login or create your user!</p>
-    <p>Username is: {{ id }}</p>
+    <p>Username is: {{ store.userInfo.username }}</p>
     <input v-model="inputid" placeholder="Insert here">
 
     <div class="btn-group me-2">

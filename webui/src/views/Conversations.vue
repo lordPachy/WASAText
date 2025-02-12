@@ -1,12 +1,14 @@
 <script>
 
 import { RouterLink } from 'vue-router';
+import { useIDStore } from '../store';
 
 export default {
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			newUser: "",
 			isGroup: false,
 			newGroupName: "",
@@ -22,7 +24,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 					this.chats = response.data;
 					this.showConversations = true;
 				} catch (e) {
@@ -34,7 +36,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-                	let response = await this.$axios.put("/conversations", {isgroup: this.isGroup, members: [{name: this.username}], groupname: this.groupName}, {headers: {Authorization: this.$router.id}});
+                	let response = await this.$axios.put("/conversations", {isgroup: this.isGroup, members: [{name: this.username}], groupname: this.groupName}, {headers: {Authorization: this.store.userInfo.id}});
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
@@ -44,7 +46,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-                	let response = await this.$axios.put("/conversations", {isgroup: true, members: this.newGroupMembersReq, groupname: this.newGroupName}, {headers: {Authorization: this.$router.id}});
+                	let response = await this.$axios.put("/conversations", {isgroup: true, members: this.newGroupMembersReq, groupname: this.newGroupName}, {headers: {Authorization: this.store.userInfo.id}});
 					this.newGroupMembers = [];
 					this.newGroupMembersReq = [];
 					this.newGroupName = "";

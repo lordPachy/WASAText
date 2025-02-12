@@ -1,10 +1,13 @@
 <script>
 
+import { useIDStore } from '../store';
+
 export default {
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			newusername: "",
 			previewImage: null,
 		}
@@ -14,8 +17,8 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try {
-					let response = await this.$axios.put("/settings/username", {name: this.newusername}, {headers: {Authorization: this.$router.id}});
-					this.$router.username = this.newusername;
+					let response = await this.$axios.put("/settings/username", {name: this.newusername}, {headers: {Authorization: this.store.userInfo.id}});
+					this.store.changeUsername(this.newusername);
 					this.$router.push({name: 'homepage'});
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -27,7 +30,7 @@ export default {
 				this.errormsg = null;
 				try {
 					console.log("hello");
-					await this.$axios.put("/settings/profilepicture", {image: this.previewImage}, {headers: {Authorization: this.$router.id}});
+					await this.$axios.put("/settings/profilepicture", {image: this.previewImage}, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: 'homepage'});
 				} catch (e) {
 					this.errormsg = e.toString();

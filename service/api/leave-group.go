@@ -39,7 +39,7 @@ func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Deleting membership from the DB
-	query := fmt.Sprintf("member = '%s' AND id = %d", user[1], convID)
+	query := fmt.Sprintf("id = %d AND member = '%s'", convID, user[1])
 	rt.baseLogger.Println(query)
 
 	rows, err := rt.db.Delete("groupmembers", query)

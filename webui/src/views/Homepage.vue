@@ -1,11 +1,11 @@
 <script>
-
+import { useIDStore } from '../store';
 export default {
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
-			username: this.$router.username,
+			store: useIDStore(),
 			userquery: "",
 			users: []
 	}
@@ -38,7 +38,7 @@ export default {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				let response = await this.$axios.get("/users", {headers: {Authorization: this.$router.id}, params: {username: this.userquery}});
+				let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: this.userquery}});
 				this.users = response.data;
 			} catch (e) {
 				this.errormsg = e.toString();
@@ -54,7 +54,7 @@ export default {
     <div
       class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
     >
-      <h1 class="h2">Welcome {{ username }}!</h1>
+      <h1 class="h2">Welcome {{ store.userInfo.username }}!</h1>
       <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2" />
       </div>
