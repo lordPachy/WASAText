@@ -341,6 +341,49 @@ paths:
               example:
                 code: 500
                 message: Internal server error
+    put:
+      tags: ["conversations"]
+      summary: Add conversation
+      description: |-
+        It creates a new conversation, be it a chat or a group
+      operationId: addConversation
+      requestBody:
+        description: Conversation request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewConversation'
+        required: true
+      responses:
+        '201':
+          description: User added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversations'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Users can only be added in groups the adder takes part in, or not valid group name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User(s) not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
+              example:
+                code: 500
+                message: Internal server error
   /groups:
     put:
       tags: ["groups"]
@@ -416,7 +459,7 @@ paths:
                 conversationid: 50
                 user:
                   username: Fabio
-                  propic: "0b00010010100"
+                  propic: "000010010100"
                 messages:
                   - messageid: 1
                     timestamp: "2017-07-21T17:32:28Z"
@@ -779,14 +822,47 @@ components:
         propic:
           type: string
           description: profile picture
-          format: binary
-          pattern: ^0b[01]{1,14}$
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
+          format: byte
+          minLength: 5
+          maxLength: 10000000
+          example: "000010010100"
       example:
         username: Fabio
-        propic: "0b00010010100"
+        propic: "000010010100"
+    NewConversation:
+      title: New conversation
+      description: This object packs a new conversation information, be it a group or a private chat
+      type: object
+      required: 
+        - isgroup
+        - members
+      properties:
+        isgroup:
+          type: boolean
+          description: boolean representing whether the new chat is a group or not
+          example: false
+        members:
+          description: members of the new chat beside the creator
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          minItems: 1
+          maxItems: 999
+          example:
+            - username: Fabio
+              propic: "000010010100"
+        groupname:
+          type: string
+          description: Name of the group
+          pattern: ^[\w\ ]{3,16}$
+          minLength: 3
+          maxLength: 16
+          example: Family
+      example:
+        isgroup: false
+        members:
+          - username: Fabio
+            propic: "000010010100"
     Conversations:
       title: Conversations
       description: This object represents the whole list of a single user's Conversations
@@ -821,11 +897,10 @@ components:
         propic:
           type: string
           description: profile picture or group picture
-          format: binary
-          pattern: ^0b[01]{1,14}$
-          minLength: 3
-          maxLength: 16
-          example: "0b00010010100"
+          format: byte
+          minLength: 5
+          maxLength: 10000000
+          example: "000010010100"
         lastmessage:
           $ref: '#/components/schemas/Message'
       example:
@@ -870,7 +945,7 @@ components:
         conversationid: 50
         user:
           username: Fabio
-          propic: "0b00010010100"
+          propic: "000010010100"
         messages:
           - messageid: 1
             timestamp: "2017-07-21T17:32:28Z"
@@ -900,9 +975,9 @@ components:
           uniqueItems: true
           example:
             - username: Fabio
-              propic: "0b00010010100"
+              propic: "000010010100"
             - username: Maria
-              propic: "0b00010010110"
+              propic: "000010010110"
         messages:
           type: array
           description: Messages of the chat
@@ -936,9 +1011,9 @@ components:
         conversationid: 10
         members:
           - username: Fabio
-            propic: "0b00010010100"
+            propic: "000010010100"
           - username: Maria
-            propic: "0b00010010110"
+            propic: "000010010110"
         messages: 
           - messageid: 1
             timestamp: "2017-07-21T17:32:28Z"

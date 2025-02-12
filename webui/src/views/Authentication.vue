@@ -5,7 +5,6 @@ export default {
 		return {
 			errormsg: null,
 			loading: false,
-			some_data: null,
 			id: "",
 			inputid: "",
 			newUser: "",

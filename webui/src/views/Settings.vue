@@ -5,9 +5,7 @@ export default {
 		return {
 			errormsg: null,
 			loading: false,
-			some_data: null,
 			newusername: "",
-			showimage: false,
 			previewImage: null,
 		}
 	},

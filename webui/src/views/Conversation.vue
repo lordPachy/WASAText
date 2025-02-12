@@ -8,7 +8,6 @@ export default {
 		return {
 			errormsg: null,
 			loading: false,
-			some_data: null,
 			data: {},
 			isGroup: false,
 			newuser: "",
@@ -16,14 +15,16 @@ export default {
 			sendingpic: false,
 			photo: "NULL",
 			forwarding: false,
-			forwardingto: -1,
+			forwardingto: "",
+			forwardables: [],
 			replyingto: -1,
-			chats: []
+			chats: [],
+			users: [],
 		}
 	},
 	created() {
 		this.refresh();
-		this.getConvos();
+		this.getForwardables();
 	},
 	methods: {
 			async refresh() {
@@ -33,6 +34,9 @@ export default {
 					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.$router.id}});
 					this.data = response.data;
 					this.messages = response.data.messages;
+					for (let i = 0; i < this.messages.length; i++){
+						this.messages[i].forwarding = false;
+					}
 					this.isGroup = Object.keys(response.data).length > 3;
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -60,6 +64,7 @@ export default {
 				this.errormsg = null;
 				try{
                 	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.$router.id}});
+					this.refresh()
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
@@ -152,12 +157,30 @@ export default {
 				}
 				this.loading = false;
 			},
-			async getConvos() {
+			async getForwardables() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
 					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.$router.id}});
+					this.forwardables = [];
 					this.chats = response.data;
+					response = await this.$axios.get("/users", {headers: {Authorization: this.$router.id}, params: {username: ""}});
+					this.users = response.data;
+
+					for (let i = 0; i < this.chats.length; i++){
+						this.forwardables.push(this.chats[i].name);
+					}
+
+					for (let i = 0; i < this.users.length; i++){
+						for (let j = 0; j <= this.forwardables.length; j++){
+							if (j == this.forwardables.length && this.$router.username != this.users[i].username){
+								this.forwardables.push(this.users[i].username);
+								break;
+							} else if (this.users[i].username == this.forwardables[j]){
+								break;
+							}
+						}
+					}
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
@@ -167,9 +190,21 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {id: this.forwardingto}, {headers: {Authorization: this.$router.id}});
+					for (let i = 0; i <= this.chats.length; i++){
+						if (i == this.chats.length){
+							console.log("creating new chat")
+							let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.$router.id}});
+							await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.$router.id}});
+							break;
+						} else if (this.forwardingto == this.chats[i].name){
+							console.log(this.chats[i].chatid);
+							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, this.chats[i].chatid, {headers: {Authorization: this.$router.id}});
+							break;
+						}
+					}
+					
 					this.forwarding = false;
-					this.forwardingto = -1;
+					this.forwardingto = "";
 					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -191,7 +226,6 @@ export default {
 				}
 				this.loading = false;
 			},
-
 	}
 }
 </script>
@@ -221,8 +255,17 @@ export default {
       <div class="btn-toolbar mb-2 mb-md-0" />
     </div>
 
-    <h5 class="h5">Group options</h5>
     <div v-if="isGroup">
+      <h5 class="h5">Group members</h5>
+      <div>
+        <ul>
+          <li v-for="u in data.members" :key="u">
+            <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
+            {{ u.username }} 
+          </li>
+        </ul>
+      </div>
+      <h5 class="h5">Group options</h5>
       <input v-model="newuser" placeholder="New group member">
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="addMemberToGroup">
         Add member to group
@@ -245,12 +288,12 @@ export default {
             <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = m.messageid">
               Reply
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="forwarding = !forwarding">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="m.forwarding = !m.forwarding">
               Forward
             </button>
-            <select v-if="forwarding" v-model="forwardingto" class="mb-3" @click.stop="forwardMessage(m)">
+            <select v-if="m.forwarding" v-model="forwardingto" class="mb-3" @click.stop="forwardMessage(m); m.forwarding = false">
               <option disabled value="-1">Please select one</option>
-              <option v-for="c in chats" :key="c" :value="c.chatid.id">{{ c.name }}</option>
+              <option v-for="c in forwardables" :key="c">{{ c }}</option>
             </select>
             <button v-if="m.username == $router.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
               Delete message

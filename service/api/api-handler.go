@@ -9,7 +9,6 @@ func (rt *_router) Handler() http.Handler {
 	// Register routes
 	rt.router.PUT("/session", rt.createUser)
 	rt.router.POST("/session", rt.doLogin)
-	rt.router.POST("/tests/database", rt.testDatabase)
 
 	// Settings methods
 	rt.router.PUT("/settings/username", rt.setMyUserName)
@@ -32,10 +31,6 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/conversations/:conversationid/messages/:messageid", rt.forwardMessage)
 	rt.router.DELETE("/conversations/:conversationid/messages/:messageid", rt.deleteMessage)
 	rt.router.DELETE("/conversations/:conversationid/messages/:messageid/comments/:commentid", rt.uncommentMessage)
-
-	// Predefined routes
-	rt.router.GET("/", rt.getHelloWorld)
-	rt.router.GET("/context", rt.wrap(rt.getContextReply))
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)
