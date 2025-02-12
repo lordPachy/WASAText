@@ -6,9 +6,7 @@ export default {
 		return {
 			errormsg: null,
 			loading: false,
-			some_data: null,
 			newgroupname: "",
-			showimage: false,
 			previewImage: null,
 		}
 	},
