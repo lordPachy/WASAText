@@ -20,18 +20,8 @@ export default {}
           <ul class="nav flex-column">
             <li class="nav-item">
               <RouterLink to="/" class="nav-link">
-                Go back to authentication
-              </RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink  to="/session" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home" /></svg>
-                Home
-              </RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink  to="/conversations" class="nav-link">
-                My Conversations
+                Go back to authentication
               </RouterLink>
             </li>
           </ul>

@@ -32,12 +32,17 @@ export default {
 					this.store.changeUsername(this.inputid);
 					this.$router.push({name: 'homepage'});
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 403"){
+						this.errormsg = "Username already in use";
+					} else if (e.toString() == "AxiosError: Request failed with status code 400") {
+						this.errormsg = "Usernames must be between 3 and 16 alphanumeric characters; no spaces";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
 			async login() {
-				console.log(this.store.userInfo.id);
 				this.loading = true;
 				this.errormsg = null;
 				try {
@@ -48,7 +53,11 @@ export default {
 					this.$router.push({name: 'homepage'});
 					this.showConversations = true;
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 404"){
+						this.errormsg = "User not found";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},

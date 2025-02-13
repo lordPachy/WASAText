@@ -23,7 +23,7 @@ printf "GROUP CHAT MESSAGE 1\n"
 curl -s --header "Content-Type: application/json" --header "Authorization: ${pippoauth}" --request POST --data '{"content":"Hi, Im Pippo", "replyingto":-1}' http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT MESSAGE 2\n"
-sleep 3s
+sleep 1s
 curl -s --header "Content-Type: application/json" --header "Authorization: ${topolinoauth}" --request POST --data '{"content":"Hi, Im Topolino", "replyingto":-1}' http://0.0.0.0:3000/conversations/$groupid
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "GROUP CHAT RETRIEVAL FROM TOPOLINO\n"

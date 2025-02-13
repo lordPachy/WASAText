@@ -39,11 +39,16 @@ func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Deleting membership from the DB
-	query := fmt.Sprintf("id = %d AND member = '%s'", convID, user[1])
-	rt.baseLogger.Println(query)
+	query := fmt.Sprintf("id = '%d' AND member = '%s'", convID, user[1])
 
 	rows, err := rt.db.Delete("groupmembers", query)
 	if err != nil || rows.Err() != nil {
+		_ = createBackendError(affinity, "Deleting group membership from the database has failed", err, w, rt)
+		return
+	}
+
+	_, err = GroupMembersRowReading(rows)
+	if err != nil {
 		_ = createBackendError(affinity, "Deleting group membership from the database has failed", err, w, rt)
 		return
 	}

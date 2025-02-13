@@ -22,11 +22,13 @@ export default {
 			replyingto: -1,
 			chats: [],
 			users: [],
+			addables: [],
 		}
 	},
 	created() {
 		this.refresh();
 		this.getForwardables();
+		this.getAddables();
 	},
 	methods: {
 			async refresh() {
@@ -66,6 +68,7 @@ export default {
 				this.errormsg = null;
 				try{
                 	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.store.userInfo.id}});
+					this.newuser = "";
 					this.refresh()
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -159,6 +162,28 @@ export default {
 				}
 				this.loading = false;
 			},
+			async getAddables() {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+					this.users = response.data;
+
+					for (let i = 0; i < this.users.length; i++){
+						for (let j = 0; j <= this.data.members.length; j++){
+							if (j == this.data.members.length){
+								this.addables.push(this.users[i].username);
+								break;
+							} else if (this.users[i].username == this.data.members[j].username){
+								break;
+							}
+						}
+					}
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
 			async getForwardables() {
 				this.loading = true;
 				this.errormsg = null;
@@ -218,6 +243,13 @@ export default {
 				this.errormsg = null;
 				try {
 					const image = a.target.files[0];
+					console.log(image.name.slice(-4))
+					if (image == null){
+						return;
+					} else if (image.name.slice(-4) != ".png"){
+						this.errormsg = "Only png images can be uploaded";
+						return;
+					}
 					const reader = new FileReader();
 					reader.readAsDataURL(image);
 					reader.onload = a =>{
@@ -268,7 +300,10 @@ export default {
         </ul>
       </div>
       <h5 class="h5">Group options</h5>
-      <input v-model="newuser" placeholder="New group member">
+      <select v-model="newuser" class="mb-3">
+        <option disabled value="">Please select one</option>
+        <option v-for="c in addables" :key="c">{{ c }}</option>
+      </select>
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="addMemberToGroup">
         Add member to group
       </button>
@@ -381,7 +416,7 @@ export default {
 </template>
 
 <style>
-bigspan { margin-left:11.8em }
+bigspan { margin-left: 11.8em; }
 .image-big{
   width: 2cm;
   object-fit: fit;

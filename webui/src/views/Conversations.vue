@@ -38,7 +38,11 @@ export default {
 				try{
                 	let response = await this.$axios.put("/conversations", {isgroup: this.isGroup, members: [{name: this.username}], groupname: this.groupName}, {headers: {Authorization: this.store.userInfo.id}});
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 400" || e.toString() == "AxiosError: Request failed with status code 404") {
+						this.errormsg = "User not found";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
@@ -51,7 +55,11 @@ export default {
 					this.newGroupMembersReq = [];
 					this.newGroupName = "";
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 400") {
+						this.errormsg = "Error: user(s) might not exist, or groupname is not valid (it must be between 3 and 16 alphanumeric characters; no spaces)";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
@@ -160,5 +168,5 @@ export default {
 </template>
 
 <style>
-smallspan { margin-left:3em }
+smallspan { margin-left: 3em; }
 </style>

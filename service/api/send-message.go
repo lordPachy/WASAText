@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
-	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -65,7 +64,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Getting the message id of who we are replying to
-	replyingTo := fmt.Sprintf("'%s'", strconv.Itoa(newMessage.ReplyingTo))
+	replyingTo := fmt.Sprintf("'%d'", newMessage.ReplyingTo)
 	if replyingTo == "'-1'" {
 		replyingTo = nullValue
 	}

@@ -11,19 +11,20 @@ const getUserInfo = () => {
 }
 
 export const useIDStore = defineStore('store', {
-  state: () => ({userInfo: getUserInfo()}),
-  // could also be defined as
-  // state: () => ({ count: 0 })
+  state: () => ({userInfo: {
+    id: "",
+    username: "",
+}}),
   actions: {
     changeID(newid) {
       this.userInfo.id = newid;
-      localStorage.setItem('store', JSON.stringify(this.userInfo));
     },
 
     changeUsername(newusername) {
         this.userInfo.username = newusername;
-        localStorage.setItem('store', JSON.stringify(this.userInfo));
     },
   },
-  persist: true
+  persist: {
+    enabled: true
+  }
 })
