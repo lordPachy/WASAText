@@ -1,11 +1,14 @@
 <script>
 
+import { useIDStore } from '../store';
+
 export default {
 	props: {conversationid: String},
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			newgroupname: "",
 			previewImage: null,
 		}
@@ -15,10 +18,14 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try {
-					let response = await this.$axios.put("/conversations/" + this.conversationid + "/settings/groupname", {value: this.newgroupname}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.put("/conversations/" + this.conversationid + "/settings/groupname", {value: this.newgroupname}, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: "conversation", params: {conversationid: this.conversationid}});
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 400") {
+						this.errormsg = "Groupnames must be between 3 and 16 alphanumeric characters; no spaces";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
@@ -27,6 +34,12 @@ export default {
 				this.errormsg = null;
 				try {
 					const image = a.target.files[0];
+					if (image == null){
+						return;
+					} else if (image.name.slice(-4) != ".png"){
+						this.errormsg = "Only png images can be uploaded";
+						return;
+					}
 					const reader = new FileReader();
 					reader.readAsDataURL(image);
 					reader.onload = a =>{
@@ -43,7 +56,7 @@ export default {
 				this.errormsg = null;
 				try {
 					console.log("hello");
-					await this.$axios.put("/conversations/" + this.conversationid + "/settings/grouphoto", {image: this.previewImage}, {headers: {Authorization: this.$router.id}});
+					await this.$axios.put("/conversations/" + this.conversationid + "/settings/grouphoto", {image: this.previewImage}, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: "conversation", params: {conversationid: this.conversationid}});
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -80,8 +93,8 @@ export default {
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="setGroupPic">
         Apply changes
       </button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="previewImage = null">
-        Reset image
+      <button v-if="previewImage != null" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="previewImage = null">
+        Discard operation
       </button>
     </div>
     <ErrorMsg v-if="errormsg" :msg="errormsg" />

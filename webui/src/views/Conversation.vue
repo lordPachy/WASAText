@@ -1,6 +1,7 @@
 <script>
 
 import { RouterLink } from 'vue-router';
+import { useIDStore } from '../store';
 
 export default {
 	props: {conversationid: String},
@@ -8,6 +9,7 @@ export default {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			data: {},
 			isGroup: false,
 			newuser: "",
@@ -20,18 +22,20 @@ export default {
 			replyingto: -1,
 			chats: [],
 			users: [],
+			addables: [],
 		}
 	},
 	created() {
 		this.refresh();
 		this.getForwardables();
+		this.getAddables();
 	},
 	methods: {
 			async refresh() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
 					this.data = response.data;
 					this.messages = response.data.messages;
 					for (let i = 0; i < this.messages.length; i++){
@@ -47,7 +51,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, photo: this.photo, replyingto: this.replyingto}, {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, photo: this.photo, replyingto: this.replyingto}, {headers: {Authorization: this.store.userInfo.id}});
 					this.message = "";
 					this.photo = "NULL";
 					this.replyingto = -1;
@@ -63,7 +67,8 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-                	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.$router.id}});
+                	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.store.userInfo.id}});
+					this.newuser = "";
 					this.refresh()
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -74,7 +79,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-                	let response = await this.$axios.delete("/conversations/" + this.conversationid, {headers: {Authorization: this.$router.id}});
+                	let response = await this.$axios.delete("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
 					this.$router.push({name: 'conversations'});
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -85,7 +90,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-                	let response = await this.$axios.put("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {reaction: reac}, {headers: {Authorization: this.$router.id}});
+                	let response = await this.$axios.put("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {reaction: reac}, {headers: {Authorization: this.store.userInfo.id}});
 					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -95,7 +100,7 @@ export default {
 			hasOwnComment(mess) {
 				let pres = false;
 				mess.comments.forEach(c => {
-					if (c.sender == this.$router.username){
+					if (c.sender == this.store.userInfo.username){
 						pres = true;
 					}
 				});
@@ -108,8 +113,8 @@ export default {
 				this.errormsg = null;
 				try{
 					for (let i = 0; i < mess.comments.length; i++){
-						if (mess.comments[i].sender == this.$router.username){
-							await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.$router.id}});
+						if (mess.comments[i].sender == this.store.userInfo.username){
+							await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.store.userInfo.id}});
 						}
 					}
 
@@ -138,7 +143,7 @@ export default {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {headers: {Authorization: this.$router.id}});
+					await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {headers: {Authorization: this.store.userInfo.id}});
 
 					this.refresh();
 				} catch (e) {
@@ -157,14 +162,36 @@ export default {
 				}
 				this.loading = false;
 			},
+			async getAddables() {
+				this.loading = true;
+				this.errormsg = null;
+				try{
+					let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+					this.users = response.data;
+
+					for (let i = 0; i < this.users.length; i++){
+						for (let j = 0; j <= this.data.members.length; j++){
+							if (j == this.data.members.length){
+								this.addables.push(this.users[i].username);
+								break;
+							} else if (this.users[i].username == this.data.members[j].username){
+								break;
+							}
+						}
+					}
+				} catch (e) {
+					this.errormsg = e.toString();
+				}
+				this.loading = false;
+			},
 			async getForwardables() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.$router.id}});
+					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 					this.forwardables = [];
 					this.chats = response.data;
-					response = await this.$axios.get("/users", {headers: {Authorization: this.$router.id}, params: {username: ""}});
+					response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
 					this.users = response.data;
 
 					for (let i = 0; i < this.chats.length; i++){
@@ -173,7 +200,7 @@ export default {
 
 					for (let i = 0; i < this.users.length; i++){
 						for (let j = 0; j <= this.forwardables.length; j++){
-							if (j == this.forwardables.length && this.$router.username != this.users[i].username){
+							if (j == this.forwardables.length && this.store.userInfo.username != this.users[i].username){
 								this.forwardables.push(this.users[i].username);
 								break;
 							} else if (this.users[i].username == this.forwardables[j]){
@@ -193,12 +220,12 @@ export default {
 					for (let i = 0; i <= this.chats.length; i++){
 						if (i == this.chats.length){
 							console.log("creating new chat")
-							let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.$router.id}});
-							await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.$router.id}});
+							let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.store.userInfo.id}});
+							await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.store.userInfo.id}});
 							break;
 						} else if (this.forwardingto == this.chats[i].name){
 							console.log(this.chats[i].chatid);
-							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, this.chats[i].chatid, {headers: {Authorization: this.$router.id}});
+							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, this.chats[i].chatid, {headers: {Authorization: this.store.userInfo.id}});
 							break;
 						}
 					}
@@ -216,6 +243,13 @@ export default {
 				this.errormsg = null;
 				try {
 					const image = a.target.files[0];
+					console.log(image.name.slice(-4))
+					if (image == null){
+						return;
+					} else if (image.name.slice(-4) != ".png"){
+						this.errormsg = "Only png images can be uploaded";
+						return;
+					}
 					const reader = new FileReader();
 					reader.readAsDataURL(image);
 					reader.onload = a =>{
@@ -266,7 +300,10 @@ export default {
         </ul>
       </div>
       <h5 class="h5">Group options</h5>
-      <input v-model="newuser" placeholder="New group member">
+      <select v-model="newuser" class="mb-3">
+        <option disabled value="">Please select one</option>
+        <option v-for="c in addables" :key="c">{{ c }}</option>
+      </select>
       <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="addMemberToGroup">
         Add member to group
       </button>
@@ -295,7 +332,7 @@ export default {
               <option disabled value="-1">Please select one</option>
               <option v-for="c in forwardables" :key="c">{{ c }}</option>
             </select>
-            <button v-if="m.username == $router.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
+            <button v-if="m.username == store.userInfo.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
               Delete message
             </button>
           </p>
@@ -303,7 +340,7 @@ export default {
             <bigspan />
             <img v-if="m.photo != 'NULL' && m.photo != ''" :src="m.photo" class="image-big">
           </div>
-          <div v-if="m.username === $router.username" class="mb-3"><bigspan />Checkmarks: {{ m.checkmarks }}</div>
+          <div v-if="m.username == store.userInfo.username" class="mb-3"><bigspan />Checkmarks: {{ m.checkmarks }}</div>
           <div>
             <p v-if="m.replyingto != -1">
               <bigspan />This message is replying to:<br>
@@ -311,15 +348,15 @@ export default {
               <img v-if="repliedPhoto(m.replyingto) != 'NULL' && repliedPhoto(m.replyingto) != ''" :src="repliedPhoto(m.replyingto)" class="image-min">
             </p>
           </div> 
-          <div v-if="m.username != $router.username && !hasOwnComment(m)">
+          <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
             <bigspan />Put a comment:
           </div>
-          <div v-if="m.username != $router.username && hasOwnComment(m)">
+          <div v-if="m.username != store.userInfo.username && hasOwnComment(m)">
             <bigspan /><button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMyComments(m)">
               Delete my comment
             </button>
           </div>
-          <div v-if="m.username != $router.username && !hasOwnComment(m)">
+          <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
             <bigspan />
             <select v-model="selected" class="mb-3" @click.stop="putComment(m, selected)">
               <option disabled value="None">Please select one</option>
@@ -379,7 +416,7 @@ export default {
 </template>
 
 <style>
-bigspan { margin-left:11.8em }
+bigspan { margin-left: 11.8em; }
 .image-big{
   width: 2cm;
   object-fit: fit;

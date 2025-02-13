@@ -1,10 +1,11 @@
 <script>
-
+import { useIDStore } from '../store';
 export default {
 	data: function() {
 		return {
 			errormsg: null,
 			loading: false,
+			store: useIDStore(),
 			id: "",
 			inputid: "",
 			newUser: "",
@@ -27,11 +28,17 @@ export default {
 				try {
 					let response = await this.$axios.put("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.id = this.id;
-					this.$router.username = this.inputid;
+					this.store.changeID(this.id);
+					this.store.changeUsername(this.inputid);
 					this.$router.push({name: 'homepage'});
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 403"){
+						this.errormsg = "Username already in use";
+					} else if (e.toString() == "AxiosError: Request failed with status code 400") {
+						this.errormsg = "Usernames must be between 3 and 16 alphanumeric characters; no spaces";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
@@ -41,12 +48,16 @@ export default {
 				try {
 					let response = await this.$axios.post("/session", {name: this.inputid});
 					this.id = response.data.identifier;
-					this.$router.id = this.id;
-					this.$router.username = this.inputid;
+					this.store.changeID(this.id);
+					this.store.changeUsername(this.inputid);
 					this.$router.push({name: 'homepage'});
 					this.showConversations = true;
 				} catch (e) {
-					this.errormsg = e.toString();
+					if (e.toString() == "AxiosError: Request failed with status code 404"){
+						this.errormsg = "User not found";
+					} else {
+						this.errormsg = e.toString();
+					}
 				}
 				this.loading = false;
 			},
@@ -65,7 +76,7 @@ export default {
       </div>
     </div>
     <p>Please login or create your user!</p>
-    <p>Username is: {{ id }}</p>
+    <p>Username is: {{ store.userInfo.username }}</p>
     <input v-model="inputid" placeholder="Insert here">
 
     <div class="btn-group me-2">
