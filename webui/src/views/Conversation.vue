@@ -2,13 +2,14 @@
 
 import { RouterLink } from 'vue-router';
 import { useIDStore } from '../store';
+import ConfirmedMsg from '../components/ConfirmedMsg.vue';
 
 export default {
 	props: {conversationid: String},
 	data: function() {
 		return {
 			errormsg: null,
-			loading: false,
+			confirmedmsg: null,			
 			store: useIDStore(),
 			data: {},
 			isGroup: false,
@@ -29,283 +30,338 @@ export default {
 	},
 	created() {
 		this.refresh();
-		this.getForwardables();
+
+		// Updating page every 2000 ms
 		this.timer = setInterval(this.refresh, 2000);
 	},
 	methods: {
-			async refresh() {
-				this.errormsg = null;
-				try{
-					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
-					this.data = response.data;
-					this.messages = response.data.messages;
-					this.isGroup = Object.keys(response.data).length > 3;
-				} catch (e) {
-					this.errormsg = e.toString();
+		/**
+		 * It must be called every time a page element might be modified.
+		 * 
+		 * It refreshes the values of data, messages and isGroup.
+		 */
+		async refresh() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
+				this.data = response.data;
+				this.messages = response.data.messages;
+				this.isGroup = Object.keys(response.data).length > 3;
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It wraps the request using message, photo and replyingto.
+		 */
+		async sendMessage() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, photo: this.photo, replyingto: this.replyingto}, {headers: {Authorization: this.store.userInfo.id}});
+
+				// Reinitializing values
+				this.message = "";
+				this.photo = "NULL";
+				this.replyingto = -1;
+				this.sendingpic = false;
+
+				// Updating
+				this.refresh();
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+		
+		/**
+		 * It employs newuser.
+		 */
+		async addMemberToGroup() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.store.userInfo.id}});
+
+				// Reinitializing values
+				this.newuser = "";
+				this.adding = false;
+
+				// Updating
+				this.refresh()
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		async leaveGroup() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.delete("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
+				this.$router.push({name: 'conversations'});
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		async putComment(mess, reac) {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.put("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {reaction: reac}, {headers: {Authorization: this.store.userInfo.id}});
+
+				// Updating
+				this.refresh();
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It returns true if the message has a comment
+		 * 
+		 * from the logged in user.
+		 */
+		hasOwnComment(mess) {
+			let pres = false;
+			mess.comments.forEach(c => {
+				if (c.sender == this.store.userInfo.username){
+					pres = true;
 				}
-			},
-			async sendMessage() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					let response = await this.$axios.post("/conversations/" + this.conversationid, {content: this.message, photo: this.photo, replyingto: this.replyingto}, {headers: {Authorization: this.store.userInfo.id}});
-					this.message = "";
-					this.photo = "NULL";
-					this.replyingto = -1;
-					this.sendingpic = false;
-					this.refresh();
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			
-			async addMemberToGroup() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.store.userInfo.id}});
-					this.newuser = "";
-					this.adding = false;
-					this.refresh()
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			async leaveGroup() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	let response = await this.$axios.delete("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
-					this.$router.push({name: 'conversations'});
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			async putComment(mess, reac) {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	let response = await this.$axios.put("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {reaction: reac}, {headers: {Authorization: this.store.userInfo.id}});
-					this.refresh();
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			hasOwnComment(mess) {
-				let pres = false;
-				mess.comments.forEach(c => {
-					if (c.sender == this.store.userInfo.username){
-						pres = true;
+			});
+
+			return pres;
+		},
+
+		/**
+		 * It deletes all comments to a message posted by
+		 * 
+		 * the logged in user (even if we are running with 
+		 * 
+		 * the assumption of a single comment per person).
+		 */
+		async deleteMyComments(mess) {
+			this.errormsg = null;
+			try{
+				for (let i = 0; i < mess.comments.length; i++){
+					if (mess.comments[i].sender == this.store.userInfo.username){
+						await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.store.userInfo.id}});
 					}
-				});
-
-				return pres;
-			},
-
-			async deleteMyComments(mess) {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					for (let i = 0; i < mess.comments.length; i++){
-						if (mess.comments[i].sender == this.store.userInfo.username){
-							await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid + "/comments/" + mess.comments[i].commentid.toString(), {headers: {Authorization: this.store.userInfo.id}});
-						}
-					}
-
-					this.refresh();
-				} catch (e) {
-					this.errormsg = e.toString();
 				}
-				this.loading = false;
-			},
 
-			repliedMessage(messid) {
-				for (let i = 0; i < this.messages.length; i++){
-					if (this.messages[i].messageid == messid){
-						return "From " + this.messages[i].username + ": " + this.messages[i].content
-					}
+				// Updating
+				this.refresh();
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It retrieves the content (text) of a message.
+		 * 
+		 * It is used only for retrieving the content of
+		 * 
+		 * the message the logged in user is replying to.
+		 */
+		repliedMessage(messid) {
+			for (let i = 0; i < this.messages.length; i++){
+				if (this.messages[i].messageid == messid){
+					return "From " + this.messages[i].username + ": " + this.messages[i].content
 				}
-			},
-			repliedPhoto(messid) {
-				for (let i = 0; i < this.messages.length; i++){
-					if (this.messages[i].messageid == messid){
-						return this.messages[i].photo
-					}
+			}
+		},
+
+		/**
+		 * It retrieves the photo of a message.
+		 * 
+		 * It is used only for retrieving the photo of
+		 * 
+		 * the message the logged in user is replying to.
+		 */
+		repliedPhoto(messid) {
+			for (let i = 0; i < this.messages.length; i++){
+				if (this.messages[i].messageid == messid){
+					return this.messages[i].photo
 				}
-			},
-			async deleteMessage(mess) {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {headers: {Authorization: this.store.userInfo.id}});
+			}
+		},
 
-					this.refresh();
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
+		/**
+		 * It deletes the message passed as parameter.
+		 * 
+		 * It requires the logged in user to be the 
+		 * 
+		 * author of the message.
+		 */
+		async deleteMessage(mess) {
+			this.errormsg = null;
+			try{
+				await this.$axios.delete("/conversations/" + this.conversationid + "/messages/" + mess.messageid, {headers: {Authorization: this.store.userInfo.id}});
 
-			async groupSettings() {
-				this.loading = true;
-				this.errormsg = null;
-				try {
-					this.$router.push({name: 'groupsettings'}, {params: {conversationid: this.conversationid}});
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			/**
-			 * It retrieves contacts who can be added to the current groupchat.
-			 * 
-			 * Their usernames are saved in addables.
-			 */
-			async getAddables() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					this.addables = [];
-					// Retrieving WASAText active users
-					let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
-					this.users = response.data;
+				// Updating
+				this.refresh();
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
 
-					// Adding all users (which are not already in the group) to the list of addables
-					for (let i = 0; i < this.users.length; i++){
-						for (let j = 0; j <= this.data.members.length; j++){
-							if (j == this.data.members.length){
-								this.addables.push(this.users[i].username);
-								break;
-							} else if (this.users[i].username == this.data.members[j].username){
-								break;
-							}
-						}
-					}
+		/**
+		 * It pushed groupsettings into the router history.
+		 */
+		async groupSettings() {
+			this.errormsg = null;
+			try {
+				this.$router.push({name: 'groupsettings'}, {params: {conversationid: this.conversationid}});
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
 
-					// Allowing the interface to show the possible options
-					this.adding = true;
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			/**
-			 * It retrieves contacts whom messages can be forwarded to.
-			 * 
-			 * Their usernames are saved in forwardables.
-			 */
-			async getForwardables() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					this.forwardables = [];
 
-					// Retrieving user's current conversations
-					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
-					this.chats = response.data;
+		/**
+		 * It retrieves contacts who can be added to the current groupchat.
+		 * 
+		 * Their usernames are saved in addables.
+		 */
+		async getAddables() {
+			this.errormsg = null;
+			try{
+				this.addables = [];
+				// Retrieving WASAText active users
+				let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+				this.users = response.data;
 
-					// Retrieving WASAText active users
-					response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
-					this.users = response.data;
-
-					// Adding all user's chats to the list of forwardables
-					for (let i = 0; i < this.chats.length; i++){
-						this.forwardables.push(this.chats[i].name);
-					}
-
-					// Adding all users (which are not already in the started chats) to the list of forwardables
-					for (let i = 0; i < this.users.length; i++){
-						for (let j = 0; j <= this.forwardables.length; j++){
-							if (j == this.forwardables.length && this.store.userInfo.username != this.users[i].username){
-								this.forwardables.push(this.users[i].username);
-								break;
-							} else if (this.users[i].username == this.forwardables[j]){
-								break;
-							}
-						}
-					}
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-
-			/**
-			 * It retrieves the message id from forwardingid
-			 * 
-			 * and the conversation to forward to from forwardingto.
-			 * 
-			 * It resets their value after usage
-			 */
-			async forwardMessage() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					for (let i = 0; i <= this.chats.length; i++){
-						// Forwarding to a non-started [private] chat
-						if (i == this.chats.length){
-							let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.store.userInfo.id}});
-							await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.store.userInfo.id}});
-
-						// Forwarding to a started chat
-						} else if (this.forwardingto == this.chats[i].name){
-							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + this.forwardingid, this.chats[i].chatid, {headers: {Authorization: this.store.userInfo.id}});
+				// Adding all users (which are not already in the group) to the list of addables
+				for (let i = 0; i < this.users.length; i++){
+					for (let j = 0; j <= this.data.members.length; j++){
+						if (j == this.data.members.length){
+							this.addables.push(this.users[i].username);
+							break;
+						} else if (this.users[i].username == this.data.members[j].username){
 							break;
 						}
 					}
-					
-					// Resetting values and refreshing page
-					this.forwardingid = -1;
-					this.forwardingto = "";
+				}
 
-					this.refresh();
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			async uploadImage(a) {
-				this.loading = true;
-				this.errormsg = null;
-				try {
-					const image = a.target.files[0];
-					console.log(image.name.slice(-4))
-					if (image == null){
-						return;
-					} else if (image.name.slice(-4) != ".png"){
-						this.errormsg = "Only png images can be uploaded";
-						return;
-					}
-					const reader = new FileReader();
-					reader.readAsDataURL(image);
-					reader.onload = a =>{
-						this.photo = a.target.result;
-					};
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-
-			/**
-			 * It returns the correct icon name to be shown according to the message 
-			 * 
-			 * checkmarks' status.
-			 */
-			checkmarks(mess){
-				switch(mess.checkmarks){
-					case 0:
-						return "minus.png"
-					case 1:
-						return "single.png"
-					case 2:
-						return "double.png"
-				}
+				// Allowing the interface to show the possible options
+				this.adding = true;
+			} catch (e) {
+				this.errormsg = e.toString();
 			}
+		},
+
+		/**
+		 * It retrieves contacts whom messages can be forwarded to.
+		 * 
+		 * Their usernames are saved in forwardables.
+		 */
+		async getForwardables() {
+			this.errormsg = null;
+			try{
+				this.forwardables = [];
+
+				// Retrieving user's current conversations
+				let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
+				this.chats = response.data;
+
+				// Retrieving WASAText active users
+				response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+				this.users = response.data;
+
+				// Adding all user's chats to the list of forwardables
+				for (let i = 0; i < this.chats.length; i++){
+					this.forwardables.push(this.chats[i].name);
+				}
+
+				// Adding all users (which are not already in the started chats) to the list of forwardables
+				for (let i = 0; i < this.users.length; i++){
+					for (let j = 0; j <= this.forwardables.length; j++){
+						if (j == this.forwardables.length && this.store.userInfo.username != this.users[i].username){
+							this.forwardables.push(this.users[i].username);
+							break;
+						} else if (this.users[i].username == this.forwardables[j]){
+							break;
+						}
+					}
+				}
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It retrieves the message id from forwardingid
+		 * 
+		 * and the conversation to forward to from forwardingto.
+		 * 
+		 * It resets their value after usage
+		 */
+		async forwardMessage() {
+			this.errormsg = null;
+			try{
+				for (let i = 0; i <= this.chats.length; i++){
+					// Forwarding to a non-started [private] chat
+					if (i == this.chats.length){
+						let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.store.userInfo.id}});
+						await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.store.userInfo.id}});
+
+					// Forwarding to a started chat
+					} else if (this.forwardingto == this.chats[i].name){
+						let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + this.forwardingid, this.chats[i].chatid, {headers: {Authorization: this.store.userInfo.id}});
+						break;
+					}
+				}
+				
+				// Resetting values and refreshing page
+				this.forwardingid = -1;
+				this.forwardingto = "";
+
+				// Updating
+				this.refresh();
+
+				// Showing confirmation message
+				this.confirmedmsg = "Message forwarded successfully";
+				await new Promise(resolve => setTimeout(resolve, 5000));
+				this.confirmedmsg = "";
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It is a support function for the image uploading
+		 * 
+		 * feature.
+		 */
+		uploadImage(a) {
+			const image = a.target.files[0];
+			if (image == null){
+				return;
+			} else if (image.name.slice(-4) != ".png"){
+				this.errormsg = "Only png images can be uploaded";
+				return;
+			}
+			const reader = new FileReader();
+			reader.readAsDataURL(image);
+			reader.onload = a =>{
+			this.photo = a.target.result;
+			}
+		},
+
+		/**
+		 * It returns the correct icon name to be shown according to the message 
+		 * 
+		 * checkmarks' status.
+		 */
+		checkmarks(mess){
+			switch(mess.checkmarks){
+				case 0:
+					return "minus.png"
+				case 1:
+					return "single.png"
+				case 2:
+					return "double.png"
+			}
+		}
+
+
 	}
 }
 </script>
@@ -333,6 +389,12 @@ export default {
       <img v-if="data.groupphoto != 'NULL'" :src="data.groupphoto" class="image-big">
       {{ data.groupname }}
     </h1>
+  </div>
+
+  <!--Error and confirmation messages-->
+  <div>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+    <ConfirmedMsg v-if="confirmedmsg" :msg="confirmedmsg" />
   </div>
 
   <!--Group information and options-->
@@ -381,6 +443,7 @@ export default {
     <h5 class="h5 mt-4">Messages</h5>
     <ul>
       <li v-for="m in data.messages" :key="m" class="mb-4">
+        <!--Content and primary options-->
         <p>
           <!--Message content-->
           ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
@@ -392,7 +455,7 @@ export default {
           </button>
           
           <!--Forward-->
-          <button v-if="forwardingid != m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardingid = m.messageid">
+          <button v-if="forwardingid != m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardingid = m.messageid; getForwardables()">
             Forward
           </button>
           <select v-if="forwardingid == m.messageid" v-model="forwardingto" class="mb-3">

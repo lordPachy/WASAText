@@ -8,12 +8,14 @@ import piniaPersist from "pinia-plugin-persist"
 
 import './assets/dashboard.css'
 import './assets/main.css'
+import ConfirmedMsg from './components/ConfirmedMsg.vue';
 
 const pinia = createPinia();
 pinia.use(piniaPersist);
 const app = createApp(App);
 app.config.globalProperties.$axios = axios;
 app.component("ErrorMsg", ErrorMsg);
+app.component("ConfirmedMsg", ConfirmedMsg);
 app.use(router);
 app.use(pinia);
 app.mount('#app');
