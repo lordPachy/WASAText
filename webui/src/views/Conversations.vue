@@ -7,119 +7,236 @@ export default {
 	data: function() {
 		return {
 			errormsg: null,
-			loading: false,
 			store: useIDStore(),
-			newUser: "",
 			isGroup: false,
 			newGroupName: "",
 			username: "",
-			showConversations: false,
+			creatingChat: false,
+			availableUsers: [],
 			newGroupMembers: [],
 			newGroupMembersReq: [],
-			chats: null
+			chats: null,
+			timer: ''
 		}
 	},
+
+	mounted() {
+		this.getConvos();
+
+		// Updating page every 2000 ms
+		this.timer = setInterval(this.getConvos, 2000);
+	},
+
+	unmounted() {
+		// Avoiding page update when it is closed
+		clearInterval(this.timer);
+	},
+
 	methods: {
-			async getConvos() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
-					this.chats = response.data;
-					this.showConversations = true;
-				} catch (e) {
+		/**
+		 * It retrieves the user's started conversations.
+		 */
+		async getConvos() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
+				this.chats = response.data;
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
+		/**
+		 * It creates a private conversation with a single user.
+		*/
+		async createPrivateConvo() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.put("/conversations", {isgroup: this.isGroup, members: [{name: this.username}], groupname: this.groupName}, {headers: {Authorization: this.store.userInfo.id}});
+
+				// Updating
+				this.getConvos();
+				this.resetGroupMembers();
+				this.creatingChat = false;
+			} catch (e) {
+				// Ensuring the message can be seen
+				clearInterval(this.timer);
+
+				// Capturing error
+				if (e.toString() == "AxiosError: Request failed with status code 400" || e.toString() == "AxiosError: Request failed with status code 404") {
+					this.errormsg = "User not found";
+				} else {
 					this.errormsg = e.toString();
 				}
-				this.loading = false;
-			},
-			async createPrivateConvo() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	let response = await this.$axios.put("/conversations", {isgroup: this.isGroup, members: [{name: this.username}], groupname: this.groupName}, {headers: {Authorization: this.store.userInfo.id}});
-				} catch (e) {
-					if (e.toString() == "AxiosError: Request failed with status code 400" || e.toString() == "AxiosError: Request failed with status code 404") {
-						this.errormsg = "User not found";
-					} else {
-						this.errormsg = e.toString();
+
+				// Ensuring the message can be seen
+				await new Promise(resolve => setTimeout(resolve, 5000));
+				this.timer = setInterval(this.getConvos, 2000);
+			}
+		},
+
+		/**
+		 * It creates a group chat.
+		 */
+		async createGroup() {
+			this.errormsg = null;
+			try{
+				let response = await this.$axios.put("/conversations", {isgroup: true, members: this.newGroupMembersReq, groupname: this.newGroupName}, {headers: {Authorization: this.store.userInfo.id}});
+				
+				// Reinitializing variables
+				this.newGroupMembers = [];
+				this.newGroupMembersReq = [];
+				this.newGroupName = "";
+
+				// Updating
+				this.getConvos();
+				this.resetGroupMembers();
+				this.creatingChat = false;
+			} catch (e) {
+				// Ensuring the message can be seen
+				clearInterval(this.timer);
+
+				if (e.toString() == "AxiosError: Request failed with status code 400") {
+					this.errormsg = "Error: user(s) might not exist, or groupname is not valid (it must be between 3 and 16 alphanumeric characters; no spaces)";
+				} else {
+					this.errormsg = e.toString();
+				}
+
+				// Ensuring the message can be seen
+				await new Promise(resolve => setTimeout(resolve, 5000));
+				this.timer = setInterval(this.getConvos, 2000);
+			}
+		},
+
+		/**
+		 * It adds "username" to newGroupMembers and newGroupMembersReq.
+		 */
+		addToGroupMembers() {
+			this.newGroupMembers.push(this.username);
+			this.newGroupMembersReq.push({name: this.username});
+			this.username = "";
+		},
+
+		/**
+		 * It cleans all temporary structures for the creation
+		 * of a new group.
+		 */
+		resetGroupMembers() {
+			this.newGroupMembers = [];
+			this.newGroupMembersObj = [];
+			this.username = "";
+			this.newGroupName = "";
+		},
+
+		/**
+		 * It calculates users that can be selected either for a
+		 * private chat or a group.
+		 */
+		async computeAvailableUsers() {
+			this.errormsg = null;
+			try{
+				this.availableUsers = [];
+
+				// Retrieving WASAText active users
+				let users = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+				users = users.data;
+
+				// Retrieving chats in a moment in time
+				let nowchats = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
+				nowchats = nowchats.data;
+				console.log(nowchats[0].chatid.id)
+				// Private chat case
+				if (!this.isGroup){
+					// Adding all users (which are not already in a private chat) to the list of available ones
+					for (let i = 0; i < users.length; i++){
+						for (let j = 0; j <= nowchats.length; j++){
+							if (j == nowchats.length){
+								if (users[i].username != this.store.userInfo.username){
+									this.availableUsers.push(users[i].username);
+								}
+								
+								break;
+							} else if (nowchats[j].chatid.id < 5000 && users[i].username == nowchats[j].name){
+								break;
+							}
+						}
+					}
+				// Group chat case 
+				} else {
+					// Adding all users (which are not already selected for the group) to the list of available ones
+					for (let i = 0; i < users.length; i++){
+						for (let j = 0; j <= this.newGroupMembers.length; j++){
+							if (j == this.newGroupMembers.length) {
+								if (users[i].username != this.store.userInfo.username){
+									this.availableUsers.push(users[i].username);
+								}
+
+								break;
+							} else if (users[i].username == this.newGroupMembers[j]){
+								break;
+							}
+						}
 					}
 				}
-				this.loading = false;
-			},
-			async createGroup() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	let response = await this.$axios.put("/conversations", {isgroup: true, members: this.newGroupMembersReq, groupname: this.newGroupName}, {headers: {Authorization: this.store.userInfo.id}});
-					this.newGroupMembers = [];
-					this.newGroupMembersReq = [];
-					this.newGroupName = "";
-				} catch (e) {
-					if (e.toString() == "AxiosError: Request failed with status code 400") {
-						this.errormsg = "Error: user(s) might not exist, or groupname is not valid (it must be between 3 and 16 alphanumeric characters; no spaces)";
-					} else {
-						this.errormsg = e.toString();
-					}
-				}
-				this.loading = false;
-			},
-			async addToGroupMembers() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	this.newGroupMembers.push(this.username);
-					this.newGroupMembersReq.push({name: this.username});
-					this.username = "";
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			async resetGroupMembers() {
-				this.loading = true;
-				this.errormsg = null;
-				try{
-                	this.newGroupMembers = [];
-					this.newGroupMembersObj = [];
-					this.username = "";
-					this.newGroupName = "";
-				} catch (e) {
-					this.errormsg = e.toString();
-				}
-				this.loading = false;
-			},
-			async parseDateTime(dtime) {
-				return dtime
-			},
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
 	}
 }
 </script>
 
 <template>
+  <!--Header-->
+  <div
+    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+  >
+    <h1 class="h2">Conversations</h1>
+  </div>
+
+  <!--Error messages-->
   <div>
-    <div
-      class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
-    >
-      <h1 class="h2">Conversations</h1>
-      <div class="btn-toolbar mb-2 mb-md-0" />
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+  </div>
+
+  <!--Conversation creation-->
+  <div>
+    <h6>Conversation creation</h6>
+    <div v-if="!creatingChat">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="creatingChat = true; isGroup = false; computeAvailableUsers()">
+        Private conversation
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="creatingChat = true; isGroup = true; computeAvailableUsers()">
+        Groupchat
+      </button>
     </div>
-    <div>
-      <h6>Create a new conversation</h6>
-      <div>
-        <input id="checkbox" v-model="isGroup" type="checkbox">
-        <label for="checkbox">Is is a group?</label>
-      </div>
-      <input v-model="username" placeholder="Username">
+    <div v-else>
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="creatingChat = false; resetGroupMembers()">
+        Discard
+      </button>
+    </div>
+
+    <br>
+
+    <div v-if="creatingChat">
+      <select v-model="username" class="mb-3">
+        <option disabled value="">Please select...</option>
+        <option v-for="c in availableUsers" :key="c">{{ c }}</option>
+      </select>
+
+      <!--Private conversation creation-->
       <button v-if="!isGroup" type="button" class="btn btn-sm btn-outline-secondary" @click="createPrivateConvo">
         Create Conversation
       </button>
-
-      <button v-if="isGroup" type="button" class="btn btn-sm btn-outline-secondary" @click="addToGroupMembers">
+	
+      <!--Group conversation creation-->
+      <button v-if="isGroup" type="button" class="btn btn-sm btn-outline-secondary" @click="addToGroupMembers(); computeAvailableUsers();">
         Add to new group
       </button>
-      <button v-if="isGroup" type="button" class="btn btn-sm btn-outline-secondary" @click="resetGroupMembers">
+      <button v-if="isGroup" type="button" class="btn btn-sm btn-outline-secondary" @click="resetGroupMembers(); computeAvailableUsers();">
         Reset group
       </button>
+
       <div v-if="isGroup">
         <input v-model="newGroupName" placeholder="New group name">
         <button type="button" class="btn btn-sm btn-outline-secondary" @click="createGroup">
@@ -130,40 +247,27 @@ export default {
         <p>Current group members are (beside you): {{ newGroupMembers }}</p>
       </div>
     </div>
+  </div>
 
+  <!--Started conversations-->
+  <div class="mt-5">
+    <h6>Started conversations</h6>
 
+    <ul>
+      <li v-for="f in chats" :key="f">
+        <img v-if="f.photo != 'NULL'" :src="f.photo" class="image-fit"><smallspan v-if="f.photo != 'NULL'" />
+        {{ f.name }}: 
+        <img v-if="f.lastmessage.photo != 'NULL' && f.lastmessage.photo != ''" :src="f.lastmessage.photo" class="image-min">
+        "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
 
-
-
-    <div class="mt-5">
-      <h6>Started conversations</h6>
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="getConvos"> 
-        Get conversations
-      </button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="showConversations = false"> 
-        Hide conversations
-      </button>
-      <div v-if="showConversations">
-        <p>Chats are:</p>
-        <ul>
-          <li v-for="f in chats" :key="f">
-            <img v-if="f.photo != 'NULL'" :src="f.photo" class="image-fit"><smallspan v-if="f.photo != 'NULL'" />
-            {{ f.name }}: 
-            <img v-if="f.lastmessage.photo != 'NULL' && f.lastmessage.photo != ''" :src="f.lastmessage.photo" class="image-min">
-            "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
-            <RouterLink :to="/conversations/+f.chatid.id" class="nav-link">
-              <button type="button" class="btn btn-sm btn-outline-secondary"> 
-                Open
-              </button>
-            </RouterLink>
-            <br><br>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-	
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+        <RouterLink :to="/conversations/+f.chatid.id" class="nav-link">
+          <button type="button" class="btn btn-sm btn-outline-secondary"> 
+            Open
+          </button>
+        </RouterLink>
+        <br><br>
+      </li>
+    </ul>
   </div>
 </template>
 

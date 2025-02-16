@@ -28,12 +28,18 @@ export default {
 			timer: '',
 		}
 	},
-	created() {
+	mounted() {
 		this.refresh();
 
 		// Updating page every 2000 ms
 		this.timer = setInterval(this.refresh, 2000);
 	},
+
+	unmounted() {
+		// Avoiding page update when it is closed
+		clearInterval(this.timer);
+	},
+
 	methods: {
 		/**
 		 * It must be called every time a page element might be modified.
@@ -417,7 +423,7 @@ export default {
 
     <div v-else>
       <select v-model="newuser" class="mb-3">
-        <option disabled value="">Please select {{ newuser }}</option>
+        <option disabled value="">Please select...</option>
         <option v-for="c in addables" :key="c">{{ c }}</option>
       </select>
       <button :disabled="newuser == ''" type="button" class="btn btn-sm btn-outline-secondary" @click="addMemberToGroup">

@@ -18,6 +18,11 @@ export default {
 		this.timer = setInterval(this.getUsers, 2000);
 	},
 
+	unmounted() {
+		// Avoiding page update when it is closed
+		clearInterval(this.timer);
+	},
+
 	methods: {
 		/**
 		 * It redirects to the conversations page.
