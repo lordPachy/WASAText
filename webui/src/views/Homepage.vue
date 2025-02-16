@@ -4,38 +4,49 @@ export default {
 	data: function() {
 		return {
 			errormsg: null,
-			loading: false,
 			store: useIDStore(),
 			userquery: "",
-			users: []
-	}
-},
+			users: [],
+			timer: ''
+		}
+	},
+
 	mounted() {
 		this.getUsers();
+
+		// Updating page every 2000 ms
+		this.timer = setInterval(this.getUsers, 2000);
 	},
+
 	methods: {
+		/**
+		 * It redirects to the conversations page.
+		 */
 		async accessConversations() {
-			this.loading = true;
 			this.errormsg = null;
 			try {
 				this.$router.push({name: 'conversations'});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
-			this.loading = false;
 		},
+
+		/**
+		 * It redirects to the user settings page.
+		 */
 		async accessSettings() {
-			this.loading = true;
 			this.errormsg = null;
 			try {
 				this.$router.push({name: 'settings'});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
-			this.loading = false;
 		},
+
+		/**
+		 * It retrieves the current WASAText users.
+		 */
 		async getUsers() {
-			this.loading = true;
 			this.errormsg = null;
 			try {
 				let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: this.userquery}});
@@ -43,51 +54,58 @@ export default {
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
-			this.loading = false;
 		},
 	},
 }
 </script>
 
 <template>
+  <!--Header-->
+  <div
+    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+  >
+    <h1 class="h2">Welcome {{ store.userInfo.username }}!</h1>
+  </div>
+
+  <!--Error messages-->
   <div>
-    <div
-      class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
-    >
-      <h1 class="h2">Welcome {{ store.userInfo.username }}!</h1>
-      <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2" />
-      </div>
-    </div>
+    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+  </div>
+
+  <!--User pages-->
+  <div>
     <p>
       Decide what to do now:
     </p>
+
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="accessConversations">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="accessConversations">
         Access conversations
       </button>
     </div>
+
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="accessSettings">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="accessSettings">
         Settings
       </button>
     </div>
-    <div class="mt-5">
-      <h5 class="h5">User list</h5>
-      <input v-model="userquery" placeholder="Username">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="getUsers">
-        Search
-      </button>
-    </div>
-    <div>
-      <ul>
-        <li v-for="u in users" :key="u">
-          <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
-          {{ u.username }} 
-        </li>
-      </ul>
-    </div>
-    <ErrorMsg v-if="errormsg" :msg="errormsg" />
+  </div>
+  
+  <!--User list-->
+  <div class="mt-5">
+    <h5 class="h5">User list</h5>
+
+    <input v-model="tmpquery" placeholder="Username">
+    <button type="button" class="btn btn-sm btn-outline-secondary" @click="userquery = tmpquery; getUsers()">
+      Search
+    </button>
+
+    <ul>
+      <li v-for="u in users" :key="u">
+        <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
+        {{ u.username }} 
+      </li>
+    </ul>
   </div>
 </template>
 

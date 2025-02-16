@@ -1,9 +1,10 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import { useIDStore } from './store';
+
+const store = useIDStore();
 </script>
-<script>
-export default {}
-</script>
+
 
 <template>
   <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
@@ -20,8 +21,17 @@ export default {}
           <ul class="nav flex-column">
             <li class="nav-item">
               <RouterLink to="/" class="nav-link">
-                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home" /></svg>
                 Go back to authentication
+              </RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink v-if="store.userInfo.id != ''" to="/session" class="nav-link">
+                Homepage
+              </RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink v-if="store.userInfo.id != ''" to="/conversations" class="nav-link">
+                My conversations
               </RouterLink>
             </li>
           </ul>

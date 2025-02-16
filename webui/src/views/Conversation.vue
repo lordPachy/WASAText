@@ -96,7 +96,7 @@ export default {
 			this.errormsg = null;
 			try{
 				let response = await this.$axios.delete("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
-				this.$router.push({name: 'conversations'});
+				this.$router.replace({name: 'conversations'});
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
