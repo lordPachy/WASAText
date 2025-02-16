@@ -16,36 +16,33 @@ export default {
 			message: "",
 			sendingpic: false,
 			photo: "NULL",
-			forwarding: false,
+			forwardingid: -1,
+			adding: false,
 			forwardingto: "",
 			forwardables: [],
 			replyingto: -1,
 			chats: [],
 			users: [],
 			addables: [],
+			timer: '',
 		}
 	},
 	created() {
 		this.refresh();
 		this.getForwardables();
-		this.getAddables();
+		this.timer = setInterval(this.refresh, 2000);
 	},
 	methods: {
 			async refresh() {
-				this.loading = true;
 				this.errormsg = null;
 				try{
 					let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
 					this.data = response.data;
 					this.messages = response.data.messages;
-					for (let i = 0; i < this.messages.length; i++){
-						this.messages[i].forwarding = false;
-					}
 					this.isGroup = Object.keys(response.data).length > 3;
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
-				this.loading = false;
 			},
 			async sendMessage() {
 				this.loading = true;
@@ -69,6 +66,7 @@ export default {
 				try{
                 	let response = await this.$axios.put("/groups", {username: {name: this.newuser}, group: {id: parseInt(this.conversationid)}}, {headers: {Authorization: this.store.userInfo.id}});
 					this.newuser = "";
+					this.adding = false;
 					this.refresh()
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -162,13 +160,21 @@ export default {
 				}
 				this.loading = false;
 			},
+			/**
+			 * It retrieves contacts who can be added to the current groupchat.
+			 * 
+			 * Their usernames are saved in addables.
+			 */
 			async getAddables() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
+					this.addables = [];
+					// Retrieving WASAText active users
 					let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
 					this.users = response.data;
 
+					// Adding all users (which are not already in the group) to the list of addables
 					for (let i = 0; i < this.users.length; i++){
 						for (let j = 0; j <= this.data.members.length; j++){
 							if (j == this.data.members.length){
@@ -179,25 +185,39 @@ export default {
 							}
 						}
 					}
+
+					// Allowing the interface to show the possible options
+					this.adding = true;
 				} catch (e) {
 					this.errormsg = e.toString();
 				}
 				this.loading = false;
 			},
+			/**
+			 * It retrieves contacts whom messages can be forwarded to.
+			 * 
+			 * Their usernames are saved in forwardables.
+			 */
 			async getForwardables() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
-					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 					this.forwardables = [];
+
+					// Retrieving user's current conversations
+					let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 					this.chats = response.data;
+
+					// Retrieving WASAText active users
 					response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
 					this.users = response.data;
 
+					// Adding all user's chats to the list of forwardables
 					for (let i = 0; i < this.chats.length; i++){
 						this.forwardables.push(this.chats[i].name);
 					}
 
+					// Adding all users (which are not already in the started chats) to the list of forwardables
 					for (let i = 0; i < this.users.length; i++){
 						for (let j = 0; j <= this.forwardables.length; j++){
 							if (j == this.forwardables.length && this.store.userInfo.username != this.users[i].username){
@@ -213,25 +233,35 @@ export default {
 				}
 				this.loading = false;
 			},
-			async forwardMessage(mess) {
+
+			/**
+			 * It retrieves the message id from forwardingid
+			 * 
+			 * and the conversation to forward to from forwardingto.
+			 * 
+			 * It resets their value after usage
+			 */
+			async forwardMessage() {
 				this.loading = true;
 				this.errormsg = null;
 				try{
 					for (let i = 0; i <= this.chats.length; i++){
+						// Forwarding to a non-started [private] chat
 						if (i == this.chats.length){
-							console.log("creating new chat")
 							let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.store.userInfo.id}});
 							await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.store.userInfo.id}});
-							break;
+
+						// Forwarding to a started chat
 						} else if (this.forwardingto == this.chats[i].name){
-							console.log(this.chats[i].chatid);
-							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, this.chats[i].chatid, {headers: {Authorization: this.store.userInfo.id}});
+							let response = await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + this.forwardingid, this.chats[i].chatid, {headers: {Authorization: this.store.userInfo.id}});
 							break;
 						}
 					}
 					
-					this.forwarding = false;
+					// Resetting values and refreshing page
+					this.forwardingid = -1;
 					this.forwardingto = "";
+
 					this.refresh();
 				} catch (e) {
 					this.errormsg = e.toString();
@@ -260,155 +290,230 @@ export default {
 				}
 				this.loading = false;
 			},
+
+			/**
+			 * It returns the correct icon name to be shown according to the message 
+			 * 
+			 * checkmarks' status.
+			 */
+			checkmarks(mess){
+				switch(mess.checkmarks){
+					case 0:
+						return "minus.png"
+					case 1:
+						return "single.png"
+					case 2:
+						return "double.png"
+				}
+			}
 	}
 }
 </script>
 
 <template>
-  <div>
-    <div
-      v-if="!isGroup" 
-      class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
-    >
-      <h1 class="h2">
-        Private chat with
-        <img v-if="data.user.propic != 'NULL'" :src="data.user.propic" class="image-big">
-        {{ data.user.username }}
-      </h1>
-      <div class="btn-toolbar mb-2 mb-md-0" />
-    </div>
-    <div
-      v-else 
-      class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
-    >
-      <h1 class="h2">
-        Group:
-        <img v-if="data.groupphoto != 'NULL'" :src="data.groupphoto" class="image-big">
-        {{ data.groupname }}
-      </h1>
-      <div class="btn-toolbar mb-2 mb-md-0" />
+  <!--Private chat headers-->
+  <div
+    v-if="!isGroup" 
+    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+  >
+    <h1 class="h2">
+      Private chat with
+      <img v-if="data.user.propic != 'NULL'" :src="data.user.propic" class="image-big">
+      {{ data.user.username }}
+    </h1>
+  </div>
+
+  <!--Group headers-->
+  <div
+    v-else 
+    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+  >
+    <h1 class="h2">
+      Group:
+      <img v-if="data.groupphoto != 'NULL'" :src="data.groupphoto" class="image-big">
+      {{ data.groupname }}
+    </h1>
+  </div>
+
+  <!--Group information and options-->
+  <div v-if="isGroup">
+    <h5 class="h5">Group members</h5>
+    <ul>
+      <li v-for="u in data.members" :key="u">
+        <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
+        {{ u.username }} 
+      </li>
+    </ul>
+
+    <h5 class="h5">Group options</h5>
+    <!--Member adding-->
+    <div v-if="!adding">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="getAddables">
+        Add new member to group
+      </button>
     </div>
 
-    <div v-if="isGroup">
-      <h5 class="h5">Group members</h5>
-      <div>
-        <ul>
-          <li v-for="u in data.members" :key="u">
-            <img v-if="u.propic != 'NULL'" :src="u.propic" class="image-fit">
-            {{ u.username }} 
-          </li>
-        </ul>
-      </div>
-      <h5 class="h5">Group options</h5>
+    <div v-else>
       <select v-model="newuser" class="mb-3">
-        <option disabled value="">Please select one</option>
+        <option disabled value="">Please select {{ newuser }}</option>
         <option v-for="c in addables" :key="c">{{ c }}</option>
       </select>
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="addMemberToGroup">
+      <button :disabled="newuser == ''" type="button" class="btn btn-sm btn-outline-secondary" @click="addMemberToGroup">
         Add member to group
       </button>
-    </div>
-    <div v-if="isGroup">
-      <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click.stop="groupSettings">
-        Group Settings
-      </button>
-      <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click.stop="leaveGroup">
-        Leave this group
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="adding = false; newuser = ''">
+        Discard
       </button>
     </div>
+    
+    <!--Other group settings-->
+    <br>
+    <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click="groupSettings">
+      Group Settings
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary mt-3" @click="leaveGroup">
+      Leave this group
+    </button>
+  </div>
+
+  <!--Messages-->
+  <div>
     <h5 class="h5 mt-4">Messages</h5>
-    <div>
-      <ul>
-        <li v-for="m in data.messages" :key="m" class="mb-4">
-          <p>
-            ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = m.messageid">
-              Reply
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="m.forwarding = !m.forwarding">
-              Forward
-            </button>
-            <select v-if="m.forwarding" v-model="forwardingto" class="mb-3" @click.stop="forwardMessage(m); m.forwarding = false">
-              <option disabled value="-1">Please select one</option>
-              <option v-for="c in forwardables" :key="c">{{ c }}</option>
-            </select>
-            <button v-if="m.username == store.userInfo.username" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMessage(m)">
-              Delete message
-            </button>
+    <ul>
+      <li v-for="m in data.messages" :key="m" class="mb-4">
+        <p>
+          <!--Message content-->
+          ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
+          
+          <!--Message options-->
+          <!--Reply-->
+          <button style="background-color:#FFCCCB;" type="button" class="btn btn-sm btn-outline-secondary" @click="replyingto = m.messageid">
+            Reply
+          </button>
+          
+          <!--Forward-->
+          <button v-if="forwardingid != m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardingid = m.messageid">
+            Forward
+          </button>
+          <select v-if="forwardingid == m.messageid" v-model="forwardingto" class="mb-3">
+            <option disabled value="-1">Please select one</option>
+            <option v-for="c in forwardables" :key="c">{{ c }}</option>
+          </select>
+          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardMessage()">
+            Send forwarded message
+          </button>
+          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardingid = -1; forwardingto = ''">
+            Discard
+          </button>
+          
+          <!--Delete-->
+          <button v-if="m.username == store.userInfo.username" style="background-color:#ccccc8;" type="button" class="btn btn-sm btn-outline-secondary" @click="deleteMessage(m)">
+            Delete message
+          </button>
+        </p>
+
+        <!--Checkmarks-->
+        <div v-if="m.username == store.userInfo.username">
+          Status: <img :src="checkmarks(m)" class="image-min">
+        </div>
+		
+        <!--Picture showing-->
+        <div>
+          <bigspan />
+          <img v-if="m.photo != 'NULL' && m.photo != ''" :src="m.photo" class="image-big">
+        </div>
+
+        <!--Replying to-->
+        <div>
+          <p v-if="m.replyingto != -1">
+            <bigspan />This message is replying to:<br>
+            <bigspan />{{ repliedMessage(m.replyingto) }}
+            <img v-if="repliedPhoto(m.replyingto) != 'NULL' && repliedPhoto(m.replyingto) != ''" :src="repliedPhoto(m.replyingto)" class="image-min">
           </p>
-          <div>
-            <bigspan />
-            <img v-if="m.photo != 'NULL' && m.photo != ''" :src="m.photo" class="image-big">
-          </div>
-          <div v-if="m.username == store.userInfo.username" class="mb-3"><bigspan />Checkmarks: {{ m.checkmarks }}</div>
-          <div>
-            <p v-if="m.replyingto != -1">
-              <bigspan />This message is replying to:<br>
-              <bigspan />{{ repliedMessage(m.replyingto) }}
-              <img v-if="repliedPhoto(m.replyingto) != 'NULL' && repliedPhoto(m.replyingto) != ''" :src="repliedPhoto(m.replyingto)" class="image-min">
-            </p>
-          </div> 
-          <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
-            <bigspan />Put a comment:
-          </div>
-          <div v-if="m.username != store.userInfo.username && hasOwnComment(m)">
-            <bigspan /><button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="deleteMyComments(m)">
-              Delete my comment
-            </button>
-          </div>
-          <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
-            <bigspan />
-            <select v-model="selected" class="mb-3" @click.stop="putComment(m, selected)">
-              <option disabled value="None">Please select one</option>
-              <option>laugh</option>
-              <option>sad</option>
-              <option>thumbs_up</option>
-              <option>surprised</option>
-              <option>love</option>
-              <option>pray</option>
-            </select>
-          </div>
+        </div>
+
+        <!--Put a comment-->
+        <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
+          <bigspan />Put a comment:
+          <br>
+          <bigspan />
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'laugh')"> 
+            <img src="laugh.png" class="image-min">
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'sad')"> 
+            <img src="sad.png" class="image-min">
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'love')"> 
+            <img src="love.png" class="image-min">
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'pray')"> 
+            <img src="pray.png" class="image-min">
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'thumbs_up')"> 
+            <img src="thumbs_up.png" class="image-min">
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'surprised')"> 
+            <img src="surprised.png" class="image-min">
+          </button>
+        </div>
+
+        <!--Delete a comment-->
+        <div v-if="m.username != store.userInfo.username && hasOwnComment(m)">
+          <bigspan />
+          <button type="button" class="btn btn-sm btn-outline-secondary" @click="deleteMyComments(m)">
+            Delete my comment
+          </button>
+        </div>
+
+        <!--Show comments-->
+        <div>
           <bigspan />Comments:
           <p v-for="r in m.comments" :key="r">
             <bigspan />
             <img :src="r.reaction + '.png'" class="image-min">
             by {{ r.sender }}
           </p>
-        </li>
-      </ul>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!--Message reply -->
+  <div v-if="replyingto != -1">
+    Currently replying to the following message:<br>
+    {{ repliedMessage(replyingto) }}
+    <div>
+      <bigspan />
+      <img v-if="repliedPhoto(replyingto) != 'NULL' && repliedPhoto(replyingto) != ''" :src="repliedPhoto(replyingto)" class="image-min">
     </div>
-	
-    <div v-if="replyingto != -1">
-      Currently replying to the following message:<br>
-      {{ repliedMessage(replyingto) }}
-      <div>
-        <bigspan />
-        <img v-if="repliedPhoto(replyingto) != 'NULL' && repliedPhoto(replyingto) != ''" :src="repliedPhoto(replyingto)" class="image-min">
-      </div>
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="replyingto = -1">
-        Abort reply
+    <button type="button" class="btn btn-sm btn-outline-secondary" @click="replyingto = -1">
+      Abort reply
+    </button>
+  </div>
+
+  <!--Sending picture-->
+  <div v-if="sendingpic">
+    <p class="mt-5">Select a picture:</p>
+    <input type="file" accept="image/png" @change="uploadImage">
+    <img v-if="photo != 'NULL'" :src="photo" class="image-fit">
+    <div class="btn-group me-2">
+      <smallspan />
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="photo = 'NULL'; sendingpic = false">
+        Discard
       </button>
     </div>
-    
-    <div v-if="sendingpic">
-      <p class="mt-5">Select a picture:</p>
-      <input type="file" accept="image/png" @change="uploadImage">
-      <img v-if="photo != 'NULL'" :src="photo" class="image-fit">
-      <div class="btn-group me-2">
-        <smallspan />
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="photo = 'NULL'; sendingpic = false">
-          Discard
-        </button>
-      </div>
-    </div>
-    
-    <br>
+  </div>
+
+  <br>
+
+  <!--New message box-->
+  <div> 
     <textarea v-model="message" class="bottom" placeholder="New message" />
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click.stop="sendMessage">
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="sendMessage">
         Send
       </button>
-      <button v-if="!sendingpic" type="button" class="btn btn-sm btn-outline-secondary" @click.stop="sendingpic = true">
+      <button v-if="!sendingpic" type="button" class="btn btn-sm btn-outline-secondary" @click="sendingpic = true">
         Picture selection
       </button>
     </div>
