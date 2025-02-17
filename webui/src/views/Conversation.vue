@@ -54,11 +54,11 @@ export default {
 		async refresh() {
 			this.errormsg = null;
 			try{
+				this.getUsers();
 				let response = await this.$axios.get("/conversations/" + this.conversationid, {headers: {Authorization: this.store.userInfo.id}});
 				this.data = response.data;
 				this.messages = response.data.messages;
 				this.isGroup = Object.keys(response.data).length > 3;
-				this.getUsers();
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -425,8 +425,8 @@ export default {
   >
     <h1 class="h2">
       Private chat with
-      <img v-if="data.user.propic != 'NULL'" :src="data.user.propic" class="image-big">
-      {{ data.user.username }}
+      <img v-if="data.user?.propic != 'NULL'" :src="data.user?.propic" class="image-big">
+      {{ data.user?.username }}
     </h1>
   </div>
 
@@ -497,7 +497,7 @@ export default {
         <!--Content and primary options-->
         <p>
           <!--Message content-->
-          ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) <img v-if="userPhoto(m.username) != 'NULL' && userPhoto(m.username) != ''" :src="userPhoto(m.username)" class="image-min"> {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
+          ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) <img v-if="isGroup && userPhoto(m.username) != 'NULL' && userPhoto(m.username) != ''" :src="userPhoto(m.username)" class="image-min"> {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
           
           <!--Message options-->
           <!--Reply-->
@@ -533,24 +533,24 @@ export default {
 		
         <!--Picture showing-->
         <div>
-          <bigspan />
+          <span class="bigspan" />
           <img v-if="m.photo != 'NULL' && m.photo != ''" :src="m.photo" class="image-big">
         </div>
 
         <!--Replying to-->
         <div>
           <p v-if="m.replyingto != -1">
-            <bigspan />This message is replying to:<br>
-            <bigspan />{{ repliedMessage(m.replyingto) }}
+            <span class="bigspan" />This message is replying to:<br>
+            <span class="bigspan" />{{ repliedMessage(m.replyingto) }}
             <img v-if="repliedPhoto(m.replyingto) != 'NULL' && repliedPhoto(m.replyingto) != ''" :src="repliedPhoto(m.replyingto)" class="image-min">
           </p>
         </div>
 
         <!--Put a comment-->
         <div v-if="m.username != store.userInfo.username && !hasOwnComment(m)">
-          <bigspan />Put a comment:
+          <span class="bigspan" />Put a comment:
           <br>
-          <bigspan />
+          <span class="bigspan" />
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'laugh')"> 
             <img src="/laugh.png" class="image-min">
           </button>
@@ -573,7 +573,7 @@ export default {
 
         <!--Delete a comment-->
         <div v-if="m.username != store.userInfo.username && hasOwnComment(m)">
-          <bigspan />
+          <span class="bigspan" />
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="deleteMyComments(m)">
             Delete my comment
           </button>
@@ -581,9 +581,9 @@ export default {
 
         <!--Show comments-->
         <div>
-          <bigspan />Comments:
+          <span class="bigspan" />Comments:
           <p v-for="r in m.comments" :key="r">
-            <bigspan />
+            <span class="bigspan" />
             <img :src="r.reaction + '.png'" class="image-min">
             by {{ r.sender }}
           </p>
@@ -597,7 +597,7 @@ export default {
     Currently replying to the following message:<br>
     {{ repliedMessage(replyingto) }}
     <div>
-      <bigspan />
+      <span class="bigspan" />
       <img v-if="repliedPhoto(replyingto) != 'NULL' && repliedPhoto(replyingto) != ''" :src="repliedPhoto(replyingto)" class="image-min">
     </div>
     <button type="button" class="btn btn-sm btn-outline-secondary" @click="replyingto = -1">
@@ -611,7 +611,7 @@ export default {
     <input type="file" accept="image/png" @change="uploadImage">
     <img v-if="photo != 'NULL'" :src="photo" class="image-fit">
     <div class="btn-group me-2">
-      <smallspan />
+      <span class="smallspan" />
       <button type="button" class="btn btn-sm btn-outline-secondary" @click="photo = 'NULL'; sendingpic = false">
         Discard
       </button>
@@ -635,7 +635,6 @@ export default {
 </template>
 
 <style>
-bigspan { margin-left: 11.8em; }
 .image-big{
   width: 2cm;
   object-fit: fit;

@@ -9,6 +9,7 @@ import ConfirmedMsg from './components/ConfirmedMsg.vue';
 
 import './assets/dashboard.css'
 import './assets/main.css'
+import './assets/spans.css'
 
 const pinia = createPinia();
 pinia.use(piniaPersist);

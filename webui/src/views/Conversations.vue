@@ -238,6 +238,7 @@ export default {
 
       <div v-if="isGroup">
         <br> Note that group names are between 3 and 16 alphanumeric characters long.
+        <br>
         <input v-model="newGroupName" placeholder="New group name">
         <button type="button" :disabled="newGroupName.length < 3 || newGroupName.length > 16 || newGroupMembers.length < 1" class="btn btn-sm btn-outline-secondary" @click="createGroup">
           Create new group
@@ -255,7 +256,7 @@ export default {
 
     <ul>
       <li v-for="f in chats" :key="f">
-        <img v-if="f.photo != 'NULL'" :src="f.photo" class="image-fit"><smallspan v-if="f.photo != 'NULL'" />
+        <img v-if="f.photo != 'NULL'" :src="f.photo" class="image-fit"><span v-if="f.photo != 'NULL'" class="smallspan" />
         {{ f.name }}: 
         <img v-if="f.lastmessage.photo != 'NULL' && f.lastmessage.photo != ''" :src="f.lastmessage.photo" class="image-min">
         "{{ f.lastmessage.content }}" ({{ f.lastmessage.timestamp.slice(0, 10) + " " + f.lastmessage.timestamp.slice(11, 19) }})
@@ -271,6 +272,3 @@ export default {
   </div>
 </template>
 
-<style>
-smallspan { margin-left: 3em; }
-</style>

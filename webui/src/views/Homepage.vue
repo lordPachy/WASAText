@@ -7,7 +7,8 @@ export default {
 			store: useIDStore(),
 			userquery: "",
 			users: [],
-			timer: ''
+			timer: '',
+			tmpquery: ''
 		}
 	},
 
