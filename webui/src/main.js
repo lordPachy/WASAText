@@ -5,10 +5,10 @@ import axios from './services/axios.js';
 import ErrorMsg from './components/ErrorMsg.vue'
 import { createPinia } from 'pinia';
 import piniaPersist from "pinia-plugin-persist"
+import ConfirmedMsg from './components/ConfirmedMsg.vue';
 
 import './assets/dashboard.css'
 import './assets/main.css'
-import ConfirmedMsg from './components/ConfirmedMsg.vue';
 
 const pinia = createPinia();
 pinia.use(piniaPersist);

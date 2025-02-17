@@ -59,9 +59,6 @@ export default {
 				this.resetGroupMembers();
 				this.creatingChat = false;
 			} catch (e) {
-				// Ensuring the message can be seen
-				clearInterval(this.timer);
-
 				// Capturing error
 				if (e.toString() == "AxiosError: Request failed with status code 400" || e.toString() == "AxiosError: Request failed with status code 404") {
 					this.errormsg = "User not found";
@@ -70,8 +67,8 @@ export default {
 				}
 
 				// Ensuring the message can be seen
-				await new Promise(resolve => setTimeout(resolve, 5000));
-				this.timer = setInterval(this.getConvos, 2000);
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		},
 
@@ -93,9 +90,6 @@ export default {
 				this.resetGroupMembers();
 				this.creatingChat = false;
 			} catch (e) {
-				// Ensuring the message can be seen
-				clearInterval(this.timer);
-
 				if (e.toString() == "AxiosError: Request failed with status code 400") {
 					this.errormsg = "Error: user(s) might not exist, or groupname is not valid (it must be between 3 and 16 alphanumeric characters; no spaces)";
 				} else {
@@ -103,8 +97,8 @@ export default {
 				}
 
 				// Ensuring the message can be seen
-				await new Promise(resolve => setTimeout(resolve, 5000));
-				this.timer = setInterval(this.getConvos, 2000);
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		},
 
@@ -144,20 +138,25 @@ export default {
 				// Retrieving chats in a moment in time
 				let nowchats = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 				nowchats = nowchats.data;
-				console.log(nowchats[0].chatid.id)
 				// Private chat case
 				if (!this.isGroup){
 					// Adding all users (which are not already in a private chat) to the list of available ones
 					for (let i = 0; i < users.length; i++){
-						for (let j = 0; j <= nowchats.length; j++){
-							if (j == nowchats.length){
-								if (users[i].username != this.store.userInfo.username){
-									this.availableUsers.push(users[i].username);
+						if (nowchats != null){
+							for (let j = 0; j <= nowchats.length; j++){
+								if (j == nowchats.length){
+									if (users[i].username != this.store.userInfo.username){
+										this.availableUsers.push(users[i].username);
+									}
+									
+									break;
+								} else if (nowchats[j].chatid.id < 5000 && users[i].username == nowchats[j].name){
+									break;
 								}
-								
-								break;
-							} else if (nowchats[j].chatid.id < 5000 && users[i].username == nowchats[j].name){
-								break;
+							}
+						} else {
+							if (users[i].username != this.store.userInfo.username){
+								this.availableUsers.push(users[i].username);
 							}
 						}
 					}
@@ -238,8 +237,9 @@ export default {
       </button>
 
       <div v-if="isGroup">
+        <br> Note that group names are between 3 and 16 alphanumeric characters long.
         <input v-model="newGroupName" placeholder="New group name">
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click="createGroup">
+        <button type="button" :disabled="newGroupName.length < 3 || newGroupName.length > 16 || newGroupMembers.length < 1" class="btn btn-sm btn-outline-secondary" @click="createGroup">
           Create new group
         </button>
       </div>

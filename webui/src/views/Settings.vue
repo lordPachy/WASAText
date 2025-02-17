@@ -30,6 +30,9 @@ export default {
 				} else {
 					this.errormsg = e.toString();
 				}
+
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		},
 
@@ -72,6 +75,7 @@ export default {
 		 */
 		cleanPage() {
 			this.previewImage = null;
+			this.errormsg = null;
 			window.location.reload();
 		}
 	}
@@ -93,13 +97,13 @@ export default {
   
   <!--Username changing-->
   <div>
-    <p>Enter your username if you want to change it:</p>
+    <p>Enter your username if you want to change it:<br>(Note that usernames are between 3 and 16 alphanumeric characters long, with no blank spaces.)</p>
     <input
       v-model="newusername" placeholder="Insert new username"
     >
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="setMyUsername">
+      <button type="button" :disabled="newusername.length < 3 || newusername.length > 16" class="btn btn-sm btn-outline-secondary" @click="setMyUsername">
         Apply changes
       </button>
     </div>
@@ -113,11 +117,11 @@ export default {
     <img v-if="previewImage != null" :src="previewImage" class="image-fit">
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="setMyProPic">
+      <button type="button" :disabled="previewImage == null" class="btn btn-sm btn-outline-secondary" @click="setMyProPic">
         Apply changes
       </button>
 
-      <button v-if="previewImage != null" type="button" class="btn btn-sm btn-outline-secondary" @click="cleanPage">
+      <button v-if="previewImage != null || errormsg != null" type="button" class="btn btn-sm btn-outline-secondary" @click="cleanPage">
         Discard operation
       </button>
     </div>

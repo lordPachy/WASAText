@@ -25,9 +25,14 @@ export default {
 			chats: [],
 			users: [],
 			addables: [],
-			timer: '',
+			timer: ''
 		}
 	},
+
+	created() {
+		this.refresh();
+	},
+
 	mounted() {
 		this.refresh();
 
@@ -53,6 +58,7 @@ export default {
 				this.data = response.data;
 				this.messages = response.data.messages;
 				this.isGroup = Object.keys(response.data).length > 3;
+				this.getUsers();
 			} catch (e) {
 				this.errormsg = e.toString();
 			}
@@ -190,6 +196,17 @@ export default {
 		},
 
 		/**
+		 * It retrieves the photo of a user.
+		 */
+		userPhoto(username) {
+		for (let i = 0; i < this.users.length; i++){
+			if (this.users[i].username == username){
+				return this.users[i].propic
+			}
+		}
+		},
+
+		/**
 		 * It deletes the message passed as parameter.
 		 * 
 		 * It requires the logged in user to be the 
@@ -220,6 +237,21 @@ export default {
 			}
 		},
 
+		/**
+		 * It retrieves the currently active users.
+		 */
+		 async getUsers() {
+			this.errormsg = null;
+			try{
+				// Retrieving WASAText active users
+				let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
+				this.users = response.data;
+
+			} catch (e) {
+				this.errormsg = e.toString();
+			}
+		},
+
 
 		/**
 		 * It retrieves contacts who can be added to the current groupchat.
@@ -231,8 +263,7 @@ export default {
 			try{
 				this.addables = [];
 				// Retrieving WASAText active users
-				let response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
-				this.users = response.data;
+				this.getUsers();
 
 				// Adding all users (which are not already in the group) to the list of addables
 				for (let i = 0; i < this.users.length; i++){
@@ -262,14 +293,14 @@ export default {
 			this.errormsg = null;
 			try{
 				this.forwardables = [];
+				clearInterval(this.timer);
 
 				// Retrieving user's current conversations
 				let response = await this.$axios.get("/conversations", {headers: {Authorization: this.store.userInfo.id}});
 				this.chats = response.data;
 
 				// Retrieving WASAText active users
-				response = await this.$axios.get("/users", {headers: {Authorization: this.store.userInfo.id}, params: {username: ""}});
-				this.users = response.data;
+				this.getUsers();
 
 				// Adding all user's chats to the list of forwardables
 				for (let i = 0; i < this.chats.length; i++){
@@ -306,7 +337,7 @@ export default {
 					// Forwarding to a non-started [private] chat
 					if (i == this.chats.length){
 						let response = await this.$axios.put("/conversations", {isgroup: false, members: [{name: this.forwardingto}], groupname: ""}, {headers: {Authorization: this.store.userInfo.id}});
-						await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + mess.messageid, response.data, {headers: {Authorization: this.store.userInfo.id}});
+						await this.$axios.post("/conversations/" + this.conversationid + "/messages/" + this.forwardingid, response.data, {headers: {Authorization: this.store.userInfo.id}});
 
 					// Forwarding to a started chat
 					} else if (this.forwardingto == this.chats[i].name){
@@ -321,6 +352,7 @@ export default {
 
 				// Updating
 				this.refresh();
+				this.timer = setInterval(this.refresh, 2000);
 
 				// Showing confirmation message
 				this.confirmedmsg = "Message forwarded successfully";
@@ -336,12 +368,16 @@ export default {
 		 * 
 		 * feature.
 		 */
-		uploadImage(a) {
+		async uploadImage(a) {
 			const image = a.target.files[0];
 			if (image == null){
 				return;
 			} else if (image.name.slice(-4) != ".png"){
 				this.errormsg = "Only png images can be uploaded";
+				clearInterval(this.timer);
+				await new Promise(resolve => setTimeout(resolve, 5000));
+				this.timer = clearInterval(this.refresh, 2000);
+				this.errormsg = null;
 				return;
 			}
 			const reader = new FileReader();
@@ -349,6 +385,15 @@ export default {
 			reader.onload = a =>{
 			this.photo = a.target.result;
 			}
+		},
+
+		/**
+		 * It reinitializes values after discarding a forward.
+		 */
+		discardForward(){
+			this.timer = setInterval(this.refresh, 2000);
+			this.forwardingid = -1;
+			this.forwardingto = '';
 		},
 
 		/**
@@ -452,7 +497,7 @@ export default {
         <!--Content and primary options-->
         <p>
           <!--Message content-->
-          ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
+          ({{ m.timestamp.slice(0, 10) + " " + m.timestamp.slice(11, 19) }}) <img v-if="userPhoto(m.username) != 'NULL' && userPhoto(m.username) != ''" :src="userPhoto(m.username)" class="image-min"> {{ m.username }}{{ (m.og_sender != "NULL") ? (" (Originally written by " + m.og_sender + ")") : ("") }}: "{{ m.content }}"
           
           <!--Message options-->
           <!--Reply-->
@@ -468,10 +513,10 @@ export default {
             <option disabled value="-1">Please select one</option>
             <option v-for="c in forwardables" :key="c">{{ c }}</option>
           </select>
-          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardMessage()">
+          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardMessage">
             Send forwarded message
           </button>
-          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="forwardingid = -1; forwardingto = ''">
+          <button v-if="forwardingid == m.messageid" type="button" class="btn btn-sm btn-outline-secondary" @click="discardForward">
             Discard
           </button>
           
@@ -507,22 +552,22 @@ export default {
           <br>
           <bigspan />
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'laugh')"> 
-            <img src="laugh.png" class="image-min">
+            <img src="/laugh.png" class="image-min">
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'sad')"> 
-            <img src="sad.png" class="image-min">
+            <img src="/sad.png" class="image-min">
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'love')"> 
-            <img src="love.png" class="image-min">
+            <img src="/love.png" class="image-min">
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'pray')"> 
-            <img src="pray.png" class="image-min">
+            <img src="/pray.png" class="image-min">
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'thumbs_up')"> 
-            <img src="thumbs_up.png" class="image-min">
+            <img src="/thumbs_up.png" class="image-min">
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" @click="putComment(m, 'surprised')"> 
-            <img src="surprised.png" class="image-min">
+            <img src="/surprised.png" class="image-min">
           </button>
         </div>
 
@@ -579,7 +624,7 @@ export default {
   <div> 
     <textarea v-model="message" class="bottom" placeholder="New message" />
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="sendMessage">
+      <button type="button" :disabled="photo == 'NULL' && message.length < 1" class="btn btn-sm btn-outline-secondary" @click="sendMessage">
         Send
       </button>
       <button v-if="!sendingpic" type="button" class="btn btn-sm btn-outline-secondary" @click="sendingpic = true">

@@ -40,6 +40,9 @@ export default {
 				} else {
 					this.errormsg = e.toString();
 				}
+
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		},
 
@@ -65,6 +68,9 @@ export default {
 				} else {
 					this.errormsg = e.toString();
 				}
+
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		}
 	}
@@ -84,18 +90,18 @@ export default {
 
   <!--User input and login/creation-->
   <div>
-    <p>Please login or create your user!</p>
-    <p>Username is: {{ store.userInfo.username }}</p>
+    <p>Please login or create your user!<br> Note that usernames are between 3 and 16 alphanumeric characters long, with no blank spaces.</p>
+    <p>Username is:</p>
     <input v-model="input" placeholder="Insert here">
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="createUser">
+      <button type="button" :disabled="input.length < 3 || input.length > 16" class="btn btn-sm btn-outline-secondary" @click="createUser">
         Create User
       </button>
     </div>
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="login">
+      <button type="button" :disabled="input.length < 3 || input.length > 16" class="btn btn-sm btn-outline-secondary" @click="login">
         Login
       </button>
     </div>

@@ -28,6 +28,9 @@ export default {
 				} else {
 					this.errormsg = e.toString();
 				}
+
+				await new Promise(resolve => setTimeout(resolve, 7000));
+				this.errormsg = null;
 			}
 		},
 
@@ -76,6 +79,7 @@ export default {
 		 */
 		cleanPage() {
 			this.previewImage = null;
+			this.errormsg = null;
 			window.location.reload();
 		}
 	}
@@ -97,13 +101,13 @@ export default {
 
   <!--Group name changing-->
   <div>
-    <p>Enter the new groupname if you want to change it:</p>
+    <p>Enter the new groupname if you want to change it:<br>Note that group names must be between 3 and 16 alphanumeric characters long.</p>
     <input
       v-model="newgroupname" placeholder="Insert new group name"
     >
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="setGroupName">
+      <button type="button" :disabled="newgroupname.length < 3 || newgroupname.length > 16" class="btn btn-sm btn-outline-secondary" @click="setGroupName">
         Apply changes
       </button>
     </div>
@@ -117,11 +121,11 @@ export default {
     <img v-if="previewImage != null" :src="previewImage" class="image-fit">
 
     <div class="btn-group me-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" @click="setGroupPic">
+      <button type="button" :disabled="previewImage == null" class="btn btn-sm btn-outline-secondary" @click="setGroupPic">
         Apply changes
       </button>
 
-      <button v-if="previewImage != null" type="button" class="btn btn-sm btn-outline-secondary" @click="cleanPage">
+      <button v-if="previewImage != null || errormsg != null" type="button" class="btn btn-sm btn-outline-secondary" @click="cleanPage">
         Discard operation
       </button>
     </div>

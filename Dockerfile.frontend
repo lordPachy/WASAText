@@ -6,7 +6,7 @@ COPY webui webui
 
 ### build vue
 WORKDIR /app/webui
-RUN npm run build-prod
+RUN yarn run build-prod
 
 
 ### serve the files
